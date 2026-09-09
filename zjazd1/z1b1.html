@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zjazd 1 · Blok 1 — SELECT, WHERE, ORDER BY (wizualnie)</title>
+<style>
+:root{
+  --ink:#16202b;
+  --ink-2:#4a5b6d;
+  --ink-3:#7d8b99;
+  --paper:#f4f6f8;
+  --panel:#ffffff;
+  --line:#dfe5ec;
+  --line-2:#c8d2dc;
+  --accent:#1c3f6e;
+  --accent-soft:#e7eef7;
+
+  --ok:#0f7a72;   --okb:#ddf1ee;
+  --bad:#a83f5b;  --badb:#fbe6ec;
+  --warm:#b26a00; --warmb:#fdf0da;
+
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
+
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:28px}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 20px
+}
+.kicker{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+  margin:0 0 6px
+}
+h1{
+  font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.4vw,32px);
+  letter-spacing:-.01em;margin:0 0 6px;line-height:1.25
+}
+.sub{color:var(--ink-2);margin:0;font-size:15px}
+
+h2{
+  font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.02em;
+  margin:46px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line-2)
+}
+h3{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;
+   text-transform:uppercase;color:var(--ink-2);margin:30px 0 10px}
+p{margin:0 0 14px}
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:14px 16px;margin:0 0 22px;font-size:14.5px
+}
+.note strong{display:block;margin-bottom:4px}
+.warn{border-left-color:var(--bad);background:var(--badb)}
+kbd,code{font-family:var(--mono);font-size:.92em;background:#eef2f6;padding:1px 5px;border-radius:3px}
+
+.brief{
+  background:#fffdf7;border:1px solid #e9dcc2;border-left:3px solid var(--warm);
+  padding:15px 18px;margin:0 0 24px
+}
+.brief .from{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:#9a7233;margin-bottom:7px
+}
+.brief q{font-style:italic;font-size:15px;display:block;quotes:"\201E" "\201D"}
+.brief .after{margin:10px 0 0;font-size:14px;color:var(--ink-2)}
+
+.demo{
+  background:var(--panel);border:1px solid var(--line);
+  margin:0 0 26px;overflow:hidden
+}
+.demo>header{padding:16px 18px 0}
+.qnum{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3)
+}
+.q{font-size:17px;font-weight:600;margin:2px 0 12px;letter-spacing:-.01em}
+
+/* ---------- SQL, który rośnie ---------- */
+pre.sql{
+  font-family:var(--mono);font-size:13.5px;line-height:1.7;
+  background:#101a24;color:#d6e2ee;margin:0;padding:14px 12px;
+  overflow-x:auto;white-space:pre
+}
+pre.sql .ln{
+  display:block;padding:0 8px;
+  opacity:.42;transition:opacity .3s ease
+}
+/* wskaźnik w marginesie zamiast tła: tło całej linii wyglądałoby
+   jak zaznaczenie fragmentu kodu do uruchomienia w SSMS */
+pre.sql .ln::before{
+  content:'\00a0';display:inline-block;width:1.5em;color:#f0b45c;font-weight:600
+}
+pre.sql .ln.hot{opacity:1}
+pre.sql .ln.full{opacity:1}
+pre.sql .ln.hot::before{content:'\25B8'}
+pre.sql.cmp .ln{opacity:1}
+pre.sql .k{color:#7fb7e8;font-weight:600}
+pre.sql .f{color:#f0b45c;font-weight:600}
+pre.sql .s{color:#9fd8a6}
+pre.sql .n{color:#e5a3c4}
+pre.sql .c{color:#647c93;font-style:italic}
+pre.sql.plain{padding:14px 18px}
+pre.sql .ln.hot::before{content:'\25B8'}
+pre.sql .dm{background:rgba(240,180,92,.22);color:#f5c274;font-weight:700;border-radius:2px;padding:0 2px}
+
+.steps{
+  display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);
+  background:#f9fafc
+}
+.steps button{
+  font-family:var(--mono);font-size:12px;letter-spacing:.04em;
+  background:none;border:0;border-right:1px solid var(--line);
+  padding:11px 14px;cursor:pointer;color:var(--ink-2);
+  border-bottom:2px solid transparent
+}
+.steps button:hover{background:#eef2f7;color:var(--ink)}
+.steps button[aria-current="true"]{
+  color:var(--ink);font-weight:600;border-bottom-color:var(--accent);background:var(--panel)
+}
+.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.steps .idx{color:var(--ink-3);margin-right:6px}
+.steps button[aria-current="true"] .idx{color:var(--accent)}
+.steps.vars button[aria-current="true"]{border-bottom-color:var(--warm)}
+
+.caption{
+  padding:12px 18px;font-size:14.5px;color:var(--ink-2);
+  border-bottom:1px solid var(--line);background:#fbfcfd;min-height:44px
+}
+.caption b{color:var(--ink)}
+
+.stage{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:900px){
+  .stage.split{grid-template-columns:1fr minmax(300px,.9fr)}
+  .stage.split .pane+.pane{border-left:1px solid var(--line);border-top:0}
+}
+.pane{padding:16px 18px 20px;min-width:0}
+.pane+.pane{border-top:1px solid var(--line)}
+.stage.rev .pane:nth-child(1){order:2;border-top:1px solid var(--line)}
+.stage.rev .pane:nth-child(2){order:1;border-top:0}
+.stage.solo .pane:first-child{display:none}
+.stage.solo .pane+.pane{border-top:0}
+.pane-lab{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:10px
+}
+.pane-lab .cnt{color:var(--accent);letter-spacing:.04em}
+.placeholder{
+  font-size:13.5px;color:var(--ink-3);font-style:italic;
+  border:1px dashed var(--line-2);padding:18px;text-align:center
+}
+
+.gridwrap{overflow-x:auto}
+.gridwrap.tall{max-height:430px;overflow-y:auto}
+.gridwrap.tall .hrow{position:sticky;top:0;background:var(--panel);padding-top:2px;z-index:1}
+.grid{font-family:var(--mono);font-size:13px;min-width:max-content}
+.hrow,.r,.res{display:grid;align-items:center}
+.hrow{
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  border-bottom:1px solid var(--line-2);padding-bottom:5px;margin-bottom:3px
+}
+.hrow.aliased{color:var(--accent);font-weight:600}
+.r{
+  padding:5px 0 5px 9px;border-left:3px solid transparent;
+  transition:background-color .35s ease,opacity .35s ease,border-color .35s ease
+}
+.r>span,.hrow>span,.res>span{padding-right:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r .num,.hrow .num,.res .num{text-align:right;padding-right:14px}
+.r.out{opacity:.3}
+.r.out .cell-key{text-decoration:line-through}
+.r.in{background:var(--okb);border-left-color:var(--ok)}
+.r.bad{background:var(--badb);border-left-color:var(--bad)}
+.cell-key{font-weight:600}
+.nullv{color:var(--ink-3);font-style:italic}
+.grid .colhi{background:var(--warmb)}
+.hrow .colhi{color:var(--warm);font-weight:600}
+.r.hi{background:var(--badb);border-left-color:var(--bad)}y
+.r.hi-ok{background:var(--okb);border-left-color:var(--ok)}
+.why{overflow:visible !important}
+
+.res{
+  padding:7px 0 7px 9px;border-left:3px solid var(--ok);background:var(--okb);
+  margin-bottom:3px
+}
+.res.cut{opacity:.28;border-left-color:var(--line-2);background:#fbfcfd}
+.res.plain{background:transparent;border-left-color:transparent}
+.res.bad{border-left-color:var(--bad);background:var(--badb)}
+.tag{
+  display:inline-block;font-size:10px;letter-spacing:.06em;
+  color:var(--ink-3);border:1px solid var(--line-2);padding:0 5px;border-radius:2px;
+  margin-left:8px;white-space:nowrap;font-family:var(--mono)
+}
+.tag.no{color:var(--bad);border-color:#e6b9c6;background:#fff}
+.tag.alert{color:var(--bad);border-color:var(--bad);background:var(--badb);font-weight:600}
+.appear{animation:pop .34s cubic-bezier(.2,.75,.35,1) both}
+@keyframes pop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+.pipe{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;
+  background:var(--panel);border:1px solid var(--line);padding:18px
+}
+.pstep{flex:1 1 140px;border-top:3px solid var(--accent);padding-top:9px}
+.pstep .pname{font-family:var(--mono);font-size:12.5px;font-weight:600}
+.pstep .pdesc{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin-top:3px}
+.pstep .pcount{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:6px}
+
+ol.ex{padding-left:22px;margin:0}
+ol.ex li{margin-bottom:16px}
+details.sol{margin-top:6px}
+details.sol summary{
+  font-family:var(--mono);font-size:12px;color:var(--accent);cursor:pointer;
+  letter-spacing:.04em
+}
+details.sol pre.sql{margin-top:8px}
+details.sol p{font-size:14px;color:var(--ink-2);margin:8px 0 0}
+
+footer{
+  margin-top:52px;padding-top:16px;border-top:1px solid var(--line-2);
+  font-size:13px;color:var(--ink-3)
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Zintegrowana Analiza Danych z wykorzystaniem SQL i Pythona</p>
+  <p class="kicker">Zjazd 1 - Blok 1</p>
+  <h1>SELECT, WHERE, ORDER BY</h1>
+  <p class="sub">Każdy przykład pokazuje, co dzieje się z konkretnymi wierszami i kolumnami: które wiersze WHERE przepuszcza do wyniku, w jakiej kolejności ustawia je ORDER BY oraz w którym momencie z całej tabeli powstaje zestawienie dla konkretnego odbiorcy.</p>
+</header>
+
+<div class="note">
+  <strong>Jak czytać te wizualizacje</strong>
+  Pod kodem znajduje się wynik zapytania, a przy większości przykładów także tabela źródłowa, w której widać, które wiersze przeszły warunek, a które odpadły i dlaczego. Kod nad wizualizacją rośnie krok po kroku, a strzałka w lewym marginesie wskazuje linię dopisaną w danym kroku. Tabele zawierają komplet danych z bazy kursowej, więc każdy wynik można porównać z tym, co zwróci SSMS.
+</div>
+
+<h2>CASE 1 - cennik dla klientów gastronomicznych</h2>
+
+<div class="brief">
+  <div class="from">Mail od działu handlowego</div>
+  <q>Chcę wysłać cennik do restauracji, hoteli i sklepów spożywczych. Potrzebuję nazw i cen produktów, nagłówki po polsku, alfabetycznie, żeby dało się coś znaleźć.</q>
+</div>
+
+<h3>Rekonesans, zanim powstanie pierwsze zapytanie</h3>
+<p>Zlecenie przyszło mailem, więc pierwsza czynność nie polega na pisaniu filtra, tylko na sprawdzeniu, czym w ogóle dysponujemy. Przechodzimy kolumna po kolumnie i patrzymy, czy jest nam potrzebna i do czego.</p>
+
+<div class="demo" data-tour="t1"></div>
+<div class="demo" data-tour="t2"></div>
+
+<h3>Wybór kolumn i nagłówki</h3>
+<p>Pierwsza rzeczywista decyzja w zapytaniu dotyczy nie filtra, lecz tego, co wyciąć. Gwiazdka sprawdza się przy rekonesansie, natomiast plik, który wychodzi na zewnątrz, zawiera dokładnie tyle kolumn, ile potrzebuje odbiorca.</p>
+
+<div class="demo" data-demo="d3"></div>
+
+<h3>WHERE, czyli odsiewanie wierszy</h3>
+
+<div class="demo" data-demo="d5"></div>
+<div class="demo" data-demo="d6"></div>
+
+<h3>ORDER BY, czyli kolejność w wyniku</h3>
+
+<div class="demo" data-demo="d7"></div>
+
+<div class="brief">
+  <div class="from">Handlowiec wrócił z uzupełnieniem</div>
+  <q>Restauracje biorą od nas nie tylko jedzenie, ale też naczynia, pojemniki i drobne wyposażenie kuchni. To u nas jest w Domu i Ogrodzie. Zapomniałem o tym napisać.</q>
+  <p class="after">Zlecenie znów okazało się niepełne, tylko odwrotnie niż w przykładzie 1. Tam <b>my</b> znaleźliśmy w danych coś, o czym zamawiający nie wiedział, tutaj <b>on</b> wie coś, czego z danych wyczytać się nie da. Numer nowej kategorii ustalamy tak samo jak poprzednio, czyli zaglądając do tabeli słownikowej <code>Categories</code>: Dom i Ogród ma <code>CategoryID</code> równe 3.</p>
+</div>
+
+<div class="demo" data-vars="v8"></div>
+
+<div class="note warn">
+  <strong>Zasada praktyczna</strong>
+  Jeżeli w jednym <code>WHERE</code> mieszasz <code>AND</code> z <code>OR</code>, stawiasz nawiasy. <code>AND</code> wiąże mocniej niż <code>OR</code>, więc bez nawiasów filtr obejmie tylko część warunku. Zapytanie nie zgłosi przy tym żadnego błędu, po prostu zwróci zły wynik, który z zewnątrz wygląda poprawnie.
+</div>
+
+<div class="demo" data-vars="v8b"></div>
+
+<h3>NULL, czyli brak wartości nie jest wartością</h3>
+
+<div class="brief">
+  <div class="from">Mail od działu handlowego</div>
+  <q>Dzięki za cennik, wygląda dobrze. Teraz potrzebuję jeszcze listy adresów mailowych, na które go wyślę. Tylko gastronomia, czyli restauracje, hotele i sklepy spożywcze.</q>
+  <p class="after">Druga część tej prośby jest w naszej bazie niewykonalna. Tabela <code>Customers</code> zawiera nazwę firmy, osobę kontaktową, dane teleadresowe i datę rejestracji, natomiast <b>nie ma w niej informacji o branży klienta</b>. Zwracamy więc to, co realnie mamy, czyli listę klientów z adresem e-mail.</p>
+</div>
+
+<p>Zostaje pytanie, jak wybrać klientów, u których adres w ogóle mamy. Puste pole zachowuje się w SQL inaczej, niż podpowiada intuicja.</p>
+<div class="demo" data-vars="v9"></div>
+
+<h3>Wszystko naraz: BETWEEN, TOP, DESC</h3>
+
+<div class="brief">
+  <div class="from">Kolejny mail od działu handlowego</div>
+  <q>Cennik idzie do klientów, ale dla naszych handlowców potrzebuję czegoś osobnego, do użytku wewnętrznego. Pięć pozycji ze średniej półki cenowej, których mamy najwięcej na magazynie, powiedzmy od 200 sztuk w górę. Na nich mogą obniżyć cenę bez pytania mnie o zgodę, bo zalegający towar generuje koszty i lepiej sprzedać go taniej niż trzymać. Na drobiazgach nie ma czego obniżać, a przy drogich pozycjach decyzję i tak podejmuję ja.</q>
+  <p class="after">Cztery zdania potocznego opisu odpowiadają czterem warunkom w <code>WHERE</code>, jednemu sortowaniu i jednemu ograniczeniu liczby wierszy. Przełożenie maila na te elementy jest właściwą treścią tego przykładu.</p>
+</div>
+
+<div class="demo" data-demo="d10"></div>
+
+<h2>CASE 2 - zamknięcie miesiąca w controllingu</h2>
+
+<div class="brief">
+  <div class="from">Mail z księgowości</div>
+  <q>Zamykamy miesiąc. Zanim policzę sprzedaż, potrzebuję listy zamówień z listopada, które nie zostały anulowane ani zwrócone, z podziałem na te już zamknięte i te, które wciąż czekają. Na zamkniętych będę liczyć.</q>
+</div>
+
+<h3>DISTINCT, czyli co w ogóle jest w tej kolumnie</h3>
+
+<div class="demo" data-demo="d11"></div>
+
+<h3>Zakres dat</h3>
+
+<div class="demo" data-demo="d12"></div>
+
+<div class="note">
+  <strong>Prawy koniec przedziału</strong>
+  Piszemy <code>&lt; '2024-12-01'</code>, a nie <code>&lt;= '2024-11-30'</code>. W naszej bazie kolumna <code>OrderDate</code> ma typ <code>DATE</code>, więc oba zapisy dadzą ten sam wynik. W typowej bazie produkcyjnej data zamówienia zawiera jednak także godzinę, a <code>'2024-11-30'</code> oznacza wtedy <code>2024-11-30 00:00:00</code>. Wszystko, co wpłynęło 30 listopada w ciągu dnia, wypadłoby z raportu. Nawyk zapisywania przedziału jako domkniętego od dołu i otwartego od góry jest odporny na oba przypadki.
+</div>
+
+<h3>IN oraz sortowanie po dwóch kolumnach</h3>
+
+<div class="demo" data-demo="d13"></div>
+
+<h2>Kolejność wykonania zapytania</h2>
+<p>SQL nie wykonuje się w tej kolejności, w jakiej się go pisze. Właśnie dlatego kod w powyższych przykładach rósł w takiej, a nie innej kolejności. Ta sama zasada wyjaśnia dwie rzeczy naraz: dlaczego <code>TOP</code> bez <code>ORDER BY</code> nie ma sensu i dlaczego alias nadany w <code>SELECT</code> zadziała w <code>ORDER BY</code>, ale nie w <code>WHERE</code>.</p>
+<div class="pipe">
+  <div class="pstep"><div class="pname">FROM</div><div class="pdesc">Bierzemy wiersze z tabeli.</div><div class="pcount">11 wierszy</div></div>
+  <div class="pstep"><div class="pname">WHERE</div><div class="pdesc">Odsiewamy pojedyncze wiersze.</div><div class="pcount">6 wierszy</div></div>
+  <div class="pstep"><div class="pname">SELECT</div><div class="pdesc">Wybieramy kolumny i nadajemy aliasy.</div><div class="pcount">tu powstaje alias</div></div>
+  <div class="pstep"><div class="pname">ORDER BY</div><div class="pdesc">Ustawiamy kolejność wyniku.</div><div class="pcount">alias już działa</div></div>
+  <div class="pstep"><div class="pname">TOP</div><div class="pdesc">Ucinamy koniec listy.</div><div class="pcount">5 wierszy</div></div>
+</div>
+
+<div class="note warn" style="margin-top:22px">
+  <strong>Błąd, na który studenci wpadają najczęściej</strong>
+  Alias powstaje dopiero na etapie <code>SELECT</code>, a <code>WHERE</code> wykonuje się wcześniej. W momencie działania <code>WHERE</code> nazwa <code>Cena</code> jeszcze nie istnieje, więc poniższe zapytanie się nie wykona:
+</div>
+<pre class="sql plain" data-sql>SELECT ProductName AS Produkt, UnitPrice AS Cena
+FROM Products
+WHERE Cena > 50;              -- błąd: invalid column name 'Cena'</pre>
+<p style="margin-top:14px">W <code>WHERE</code> trzeba użyć <code>UnitPrice</code>. Natomiast w <code>ORDER BY Cena</code> ten sam alias zadziała bez przeszkód, ponieważ sortowanie otrzymuje gotowy wynik wraz z nazwami kolumn.</p>
+
+<h2>Ćwiczenia samodzielne</h2>
+<p>Rozwiąż je w SSMS na pełnej bazie <code>EcommerceCourseDB</code>, nie na wycinku ze strony. Przy każdym zleceniu zastanów się najpierw, <b>kto to dostanie i co z tym zrobi</b>. Dobór kolumn oraz kolejność wierszy powinny z tego wynikać.</p>
+<ol class="ex">
+  <li>Dział obsługi przygotowuje listę klientów z Polski do obdzwonienia w sprawie nowego cennika. Potrzebuje nazwy firmy, osoby kontaktowej i telefonu, ale tylko tych klientów, u których numer telefonu w ogóle mamy. Alfabetycznie według nazwy firmy.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CompanyName AS Firma,
+    ContactName AS Kontakt,
+    Phone       AS Telefon
+FROM Customers
+WHERE Country = 'Polska'
+  AND Phone IS NOT NULL
+ORDER BY CompanyName;</pre>
+    <p>Dwa warunki połączone przez <code>AND</code>: kraj oraz obecność telefonu. Lista służy do obdzwaniania, więc <code>CustomerID</code> nikomu się nie przyda, natomiast porządek alfabetyczny owszem.</p></details>
+  </li>
+  <li>Zarząd przygotowuje slajd o pozycjonowaniu oferty i chce 5 najdroższych produktów, które nadal są w sprzedaży. Sama nazwa i cena.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT TOP 5
+    ProductName AS Produkt,
+    UnitPrice   AS Cena
+FROM Products
+WHERE Discontinued = 0
+ORDER BY UnitPrice DESC;</pre>
+    <p><code>TOP 5</code> ma sens wyłącznie razem z <code>ORDER BY ... DESC</code>. Warunek dotyczący sprzedaży trzeba dopisać samodzielnie, ponieważ w treści zlecenia pojawia się tylko mimochodem.</p></details>
+  </li>
+  <li>Zaopatrzenie robi przegląd asortymentu przed rozmowami z dostawcami. Potrzebuje produktów z kategorii Elektronika albo Odzież, w cenie od 100 do 500 zł, których zostało mniej niż 20 sztuk. To kandydaci do zamówienia. Od tych, których zostało najmniej.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CategoryID   AS Kategoria,
+    ProductName  AS Produkt,
+    UnitsInStock AS NaStanie,
+    UnitPrice    AS Cena
+FROM Products
+WHERE (CategoryID = 1 OR CategoryID = 2)
+  AND UnitPrice BETWEEN 100 AND 500
+  AND UnitsInStock &lt; 20
+ORDER BY UnitsInStock;</pre>
+    <p>Nawiasy wokół <code>OR</code> są tu obowiązkowe. Bez nich cała Elektronika weszłaby do wyniku niezależnie od ceny i stanu magazynowego. Zamiennie można napisać <code>CategoryID IN (1, 2)</code>.</p></details>
+  </li>
+  <li>Dział windykacji sprawdza klientów zarejestrowanych w drugiej połowie 2024 roku, którzy nie zostawili ani telefonu, ani adresu e-mail. Od najnowszych.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CustomerID,
+    CompanyName      AS Firma,
+    RegistrationDate AS DataRejestracji
+FROM Customers
+WHERE RegistrationDate >= '2024-07-01'
+  AND RegistrationDate <  '2025-01-01'
+  AND Email IS NULL
+  AND Phone IS NULL
+ORDER BY RegistrationDate DESC;</pre>
+    <p>Sformułowanie „ani, ani” odpowiada dwóm warunkom <code>IS NULL</code> połączonym przez <code>AND</code>. Zapis <code>Email = NULL</code> nie zwróci niczego. <code>CustomerID</code> zostaje w wyniku, ponieważ windykacja będzie musiała odszukać tych klientów w systemie.</p></details>
+  </li>
+</ol>
+
+<h2>Podsumowanie i mostek do Bloku 2</h2>
+<p>Wszystkie dzisiejsze pytania zaczynały się od słowa „które” albo „kto”, ponieważ tyle potrafi <code>SELECT</code> bez agregatów: <b>wskazać wiersze</b>. Każde zapytanie zwracało listę, dłuższą albo krótszą, ale zawsze listę.</p>
+<p>Księgowość otrzymała to, o co prosiła, czyli zamówienia z listopada rozdzielone na zamknięte i czekające. Zamknięcie miesiąca kończy się jednak podaniem jednej liczby, czyli wartości sprzedaży za dany okres. Lista wierszy nie jest odpowiedzią na takie pytanie. Potrzebne jest zapytanie, które wierszy nie wskazuje, lecz je <b>zwija</b> do liczby, sumy albo średniej. Tym zajmiemy się w Bloku 2.</p>
+<p>Okaże się przy tym, że samo zwijanie nie wystarczy. Wartość zamówienia zapisano w innej tabeli niż jego status, a jedno zapytanie sięga na razie tylko do jednej tabeli. Do tego przejdziemy w Bloku 3.</p>
+
+<footer>
+  Materiał towarzyszący plikowi <code>Z1B1.sql</code><br><br> 
+  © 2026 Małgorzata Pykała
+</footer>
+</div>
+<script>
+/* ============================================================
+   1. DANE: komplet tabel z bazy EcommerceCourseDB
+   ============================================================ */
+
+/* Products: komplet 54 wierszy z bazy kursowej */
+const PRODUCTS = [
+  {id:1, name:'Słuchawki bezprzewodowe', cat:1, sup:11, price:249.0, stock:14, disc:0},
+  {id:2, name:'Ładowarka USB-C', cat:1, sup:4, price:59.9, stock:220, disc:0},
+  {id:3, name:'Powerbank 10000mAh', cat:1, sup:15, price:129.0, stock:180, disc:0},
+  {id:4, name:'Kamera internetowa', cat:1, sup:1, price:189.0, stock:16, disc:0},
+  {id:5, name:'Głośnik Bluetooth', cat:1, sup:1, price:449.0, stock:95, disc:0},
+  {id:6, name:'Mysz bezprzewodowa', cat:1, sup:9, price:89.0, stock:260, disc:0},
+  {id:7, name:'Klawiatura mechaniczna', cat:1, sup:13, price:449.0, stock:74, disc:0},
+  {id:8, name:'Monitor 24 cale', cat:1, sup:12, price:899.0, stock:41, disc:0},
+  {id:9, name:'Koszulka bawełniana', cat:2, sup:13, price:49.0, stock:62, disc:0},
+  {id:10, name:'Kurtka zimowa', cat:2, sup:6, price:399.0, stock:11, disc:0},
+  {id:11, name:'Spodnie jeansowe', cat:2, sup:1, price:199.0, stock:17, disc:0},
+  {id:12, name:'Sweter wełniany', cat:2, sup:15, price:159.0, stock:19, disc:0},
+  {id:13, name:'Czapka zimowa', cat:2, sup:11, price:69.0, stock:48, disc:0},
+  {id:14, name:'Skarpety sportowe', cat:2, sup:4, price:24.9, stock:40, disc:0},
+  {id:15, name:'Zestaw garnków', cat:3, sup:13, price:249.0, stock:38, disc:0},
+  {id:16, name:'Lampa stołowa', cat:3, sup:14, price:89.0, stock:415, disc:0},
+  {id:17, name:'Doniczka ceramiczna', cat:3, sup:14, price:34.9, stock:260, disc:0},
+  {id:18, name:'Narzędzia ogrodnicze', cat:3, sup:11, price:119.0, stock:96, disc:0},
+  {id:19, name:'Poduszka dekoracyjna', cat:3, sup:2, price:59.0, stock:240, disc:0},
+  {id:20, name:'Świece zapachowe', cat:3, sup:4, price:29.9, stock:380, disc:0},
+  {id:21, name:'Mata do jogi', cat:4, sup:15, price:89.0, stock:130, disc:0},
+  {id:22, name:'Hantle 5kg', cat:4, sup:6, price:79.0, stock:26, disc:1},
+  {id:23, name:'Rower miejski', cat:4, sup:14, price:1490.0, stock:12, disc:0},
+  {id:24, name:'Namiot turystyczny', cat:4, sup:2, price:349.0, stock:58, disc:0},
+  {id:25, name:'Piłka do koszykówki', cat:4, sup:12, price:69.0, stock:210, disc:0},
+  {id:26, name:'Bidon sportowy', cat:4, sup:15, price:29.9, stock:340, disc:0},
+  {id:27, name:'Powieść kryminalna', cat:5, sup:3, price:39.9, stock:190, disc:0},
+  {id:28, name:'Poradnik biznesowy', cat:5, sup:12, price:59.0, stock:145, disc:0},
+  {id:29, name:'Atlas geograficzny', cat:5, sup:6, price:89.0, stock:62, disc:0},
+  {id:30, name:'Książka kucharska', cat:5, sup:2, price:69.0, stock:230, disc:0},
+  {id:31, name:'Biografia', cat:5, sup:11, price:44.9, stock:275, disc:0},
+  {id:32, name:'Klocki konstrukcyjne', cat:6, sup:2, price:149.0, stock:165, disc:0},
+  {id:33, name:'Puzzle 500 elementów', cat:6, sup:9, price:34.9, stock:290, disc:0},
+  {id:34, name:'Pluszowy miś', cat:6, sup:1, price:59.0, stock:118, disc:0},
+  {id:35, name:'Gra planszowa', cat:6, sup:9, price:119.0, stock:84, disc:0},
+  {id:36, name:'Samochodzik zdalnie sterowany', cat:6, sup:2, price:199.0, stock:47, disc:0},
+  {id:37, name:'Krem nawilżający', cat:7, sup:12, price:79.0, stock:152, disc:0},
+  {id:38, name:'Szampon do włosów', cat:7, sup:13, price:24.9, stock:410, disc:0},
+  {id:39, name:'Perfumy', cat:7, sup:11, price:249.0, stock:36, disc:0},
+  {id:40, name:'Balsam do ciała', cat:7, sup:4, price:34.9, stock:325, disc:0},
+  {id:41, name:'Kawa ziarnista 1kg', cat:8, sup:13, price:69.0, stock:18, disc:1},
+  {id:42, name:'Herbata zielona', cat:8, sup:6, price:24.9, stock:350, disc:0},
+  {id:43, name:'Oliwa z oliwek', cat:8, sup:15, price:44.9, stock:245, disc:0},
+  {id:44, name:'Czekolada gorzka', cat:8, sup:1, price:12.9, stock:460, disc:0},
+  {id:45, name:'Miód naturalny', cat:8, sup:2, price:39.9, stock:22, disc:1},
+  {id:46, name:'Zeszyt A4', cat:9, sup:13, price:6.9, stock:480, disc:0},
+  {id:47, name:'Długopis żelowy', cat:9, sup:8, price:4.9, stock:520, disc:0},
+  {id:48, name:'Organizer na biurko', cat:9, sup:14, price:79.0, stock:74, disc:0},
+  {id:49, name:'Papier do drukarki', cat:9, sup:9, price:79.0, stock:310, disc:0},
+  {id:50, name:'Segregator', cat:9, sup:5, price:12.9, stock:395, disc:0},
+  {id:51, name:'Witamina C', cat:10, sup:8, price:39.9, stock:205, disc:0},
+  {id:52, name:'Termometr elektroniczny', cat:10, sup:4, price:49.0, stock:88, disc:0},
+  {id:53, name:'Maseczki ochronne', cat:10, sup:4, price:19.9, stock:6, disc:1},
+  {id:54, name:'Suplement magnezowy', cat:10, sup:11, price:29.9, stock:170, disc:0}
+];
+
+/* Customers: komplet 72 wierszy */
+const CUSTOMERS = [
+  {id:1, comp:'Gabinety Dylong-Kuran Sp.k.', cont:'pan Adrian Amanowicz', mail:'adrian.amanowicz@dylong.example.com', tel:'+48 793 465 787'},
+  {id:2, comp:'Młot S.A.', cont:'Natan Tylek', mail:'natan.tylek@mlot.example.com', tel:null},
+  {id:3, comp:'Widłak-Łachut Sp.j.', cont:'Rozalia Tyka', mail:'rozalia.tyka@widlak.example.com', tel:'+48 32 631 16 56'},
+  {id:4, comp:'Fundacja Sobuś Sp.k.', cont:'Oskar Juśkiewicz', mail:'oskar.juskiewicz@sobus.example.com', tel:'723 387 262'},
+  {id:5, comp:'Fundacja Synak', cont:'Sara Słoka', mail:'sara.sloka@synak.example.com', tel:'533 267 736'},
+  {id:6, comp:'Ciereszko Sp.j.', cont:'Tobiasz Bobrowicz', mail:'tobiasz.bobrowicz@ciereszko.example.com', tel:'+48 888 723 430'},
+  {id:7, comp:'FPUH Bilik-Surdyk Sp.k.', cont:'pani Olga Stempin', mail:'olga.stempin@bilik.example.com', tel:'518 121 913'},
+  {id:8, comp:'Grupa Kolman s.c.', cont:'Elżbieta Paluszak', mail:'elzbieta.paluszak@kolman.example.com', tel:'+48 789 985 435'},
+  {id:9, comp:'Żurawik-Tylman S.A.', cont:'Róża Klatka', mail:null, tel:null},
+  {id:10, comp:'Grupa Doliwa', cont:'Leonard Szyda', mail:null, tel:null},
+  {id:11, comp:'Dykas-Sycz Sp. z o.o.', cont:'Jeremi Ziętal', mail:'jeremi.zietal@dykas.example.com', tel:'+48 734 874 016'},
+  {id:12, comp:'Grupa Staś', cont:'pani Krystyna Owczarczak', mail:null, tel:null},
+  {id:13, comp:'PPUH Pleban', cont:'Kornelia Szymańczyk', mail:'kornelia.szymanczyk@pleban.example.com', tel:'883 315 869'},
+  {id:14, comp:'Ufnal-Kurda S.A.', cont:'Klara Langa', mail:'klara.langa@ufnal.example.com', tel:null},
+  {id:15, comp:'Bzymek-Łudzik Sp.j.', cont:null, mail:'bzymekludzik.spj@bzymek.example.com', tel:'696 541 458'},
+  {id:16, comp:'FPUH Dudzicz s.c.', cont:'pani Sandra Sałuda', mail:'sandra.saluda@dudzicz.example.com', tel:'579 655 698'},
+  {id:17, comp:'Majewicz s.c.', cont:'Juliusz Strojna', mail:'juliusz.strojna@majewicz.example.com', tel:'+48 783 561 595'},
+  {id:18, comp:'Słonka Sp. z o.o. Sp.k.', cont:'Kalina Szajda', mail:'kalina.szajda@slonka.example.com', tel:'603 662 994'},
+  {id:19, comp:'PPUH Jażdżyk Sp. z o.o.', cont:'Stefan Mol', mail:'stefan.mol@jazdzyk.example.com', tel:'+48 735 777 387'},
+  {id:20, comp:'Latko-Więckiewicz Sp. z o.o. Sp.k.', cont:null, mail:'oo.spk@latko.example.com', tel:null},
+  {id:21, comp:'FPUH Cal S.A.', cont:'Anastazja Holewa', mail:null, tel:null},
+  {id:22, comp:'Spółdzielnia Bystroń-Bulczak Sp.j.', cont:'Marcelina Hawrylak', mail:'marcelina.hawrylak@bystron.example.com', tel:'22 872 77 43'},
+  {id:23, comp:'Gabinety Gabryszak', cont:'pan Sebastian Żach', mail:'sebastian.zach@gabryszak.example.com', tel:'735 581 223'},
+  {id:24, comp:'FPUH Fijak Sp.k.', cont:'Wiktor Sołek', mail:'wiktor.solek@fijak.example.com', tel:'+48 510 366 909'},
+  {id:25, comp:'Fundacja Kucz Sp. z o.o. Sp.k.', cont:'Tobiasz Henke', mail:'tobiasz.henke@kucz.example.com', tel:'+48 669 373 467'},
+  {id:26, comp:'Prażmo Sp. z o.o. Sp.k.', cont:'Leon Łokietek', mail:'leon.lokietek@prazmo.example.com', tel:'506 990 162'},
+  {id:27, comp:'Spółdzielnia Filas Sp. z o.o. Sp.k.', cont:'Arkadiusz Kostera', mail:'arkadiusz.kostera@filas.example.com', tel:'736 417 080'},
+  {id:28, comp:'Spółdzielnia Fijałek', cont:null, mail:'spoldzielnia.fijalek@fijalek.example.com', tel:'+48 722 327 193'},
+  {id:29, comp:'FPUH Cybul i syn s.c.', cont:null, mail:'syn.sc@cybul.example.com', tel:'579 049 663'},
+  {id:30, comp:'Giel Sp.k.', cont:'Paweł Duchnik', mail:'pawel.duchnik@giel.example.com', tel:'+48 666 518 506'},
+  {id:31, comp:'Grupa Laskus Sp. z o.o. Sp.k.', cont:'pan Przemysław Latuszek', mail:'przemyslaw.latuszek@laskus.example.com', tel:null},
+  {id:32, comp:'Rembacz-Cholewka s.c.', cont:'Natan Mirga', mail:'natan.mirga@rembacz.example.com', tel:'+48 573 545 494'},
+  {id:33, comp:'Grupa Kocurek-Rzeźniczak Sp. z o.o.', cont:'Kalina Wołoszyk', mail:'kalina.woloszyk@kocurek.example.com', tel:null},
+  {id:34, comp:'FPUH Ziegler', cont:'pani Liwia Osman', mail:'liwia.osman@ziegler.example.com', tel:null},
+  {id:35, comp:'Grupa Kawulok', cont:'Eryk Kieszek', mail:'eryk.kieszek@kawulok.example.com', tel:'32 894 13 43'},
+  {id:36, comp:'Spółdzielnia Miętus', cont:'Ewelina Friedrich', mail:'ewelina.friedrich@mietus.example.com', tel:'+48 792 710 947'},
+  {id:37, comp:'Fundacja Ignatiuk S.A.', cont:'Iwo Kuśmider', mail:'iwo.kusmider@ignatiuk.example.com', tel:'+48 571 902 294'},
+  {id:38, comp:'Krekora Sp. z o.o.', cont:'Gaja Bancerz', mail:'gaja.bancerz@krekora.example.com', tel:'+48 534 964 990'},
+  {id:39, comp:'FPUH Teper-Husak S.A.', cont:'Błażej Andryszczyk', mail:null, tel:'+48 661 206 797'},
+  {id:40, comp:'Grupa Rusnak', cont:'Ryszard Kuffel', mail:'ryszard.kuffel@rusnak.example.com', tel:'739 361 832'},
+  {id:41, comp:'Gabinety Garczarek', cont:'Stanisław Krzywonos', mail:'stanislaw.krzywonos@garczarek.example.com', tel:'577 464 887'},
+  {id:42, comp:'Grupa Cieplucha Sp. z o.o.', cont:'Kazimierz Halik', mail:'kazimierz.halik@cieplucha.example.com', tel:null},
+  {id:43, comp:'PPUH Narożna Sp.j.', cont:'Grzegorz Olas', mail:'grzegorz.olas@narozna.example.com', tel:'+48 575 655 125'},
+  {id:44, comp:'FPUH Jędryczka Sp. z o.o. Sp.k.', cont:'Krystyna Pyda', mail:'krystyna.pyda@jedryczka.example.com', tel:'791 680 876'},
+  {id:45, comp:'Sendor s.c.', cont:'pani Krystyna Buszkiewicz', mail:'krystyna.buszkiewicz@sendor.example.com', tel:'604 771 093'},
+  {id:46, comp:'Dziuban-Szulist Sp. z o.o.', cont:'Tomasz Zyguła', mail:'tomasz.zygula@dziuban.example.com', tel:'22 274 84 67'},
+  {id:47, comp:'Spółdzielnia Rajtar s.c.', cont:null, mail:'rajtar.sc@rajtar.example.com', tel:'798 404 499'},
+  {id:48, comp:'Gabinety Dukat Sp.j.', cont:'pan Leon Zaborek', mail:'leon.zaborek@dukat.example.com', tel:null},
+  {id:49, comp:'FPUH Mudlaff Sp.j.', cont:null, mail:'mudlaff.spj@mudlaff.example.com', tel:'791 718 702'},
+  {id:50, comp:'Gabinety Żyto S.A.', cont:'Natasza Kilar', mail:'natasza.kilar@zyto.example.com', tel:'535 865 780'},
+  {id:51, comp:'Grupa Kiljan-Gadzała Sp.k.', cont:'Olaf Pyś', mail:'olaf.pys@kiljan.example.com', tel:'+48 791 724 005'},
+  {id:52, comp:'Zapaśnik Sp. z o.o. Sp.k.', cont:'pani Marianna Bieleń', mail:'marianna.bielen@zapasnik.example.com', tel:'662 196 937'},
+  {id:53, comp:'Spółdzielnia Gosek-Bazyluk Sp.k.', cont:'Róża Micał', mail:'roza.mical@gosek.example.com', tel:null},
+  {id:54, comp:'FPUH Supeł Sp.j.', cont:'Konrad Szajek', mail:'konrad.szajek@supel.example.com', tel:'+48 695 944 064'},
+  {id:55, comp:'Matwiejczyk i syn s.c.', cont:'Sonia Mazepa', mail:'sonia.mazepa@matwiejczyk.example.com', tel:'+48 733 942 104'},
+  {id:56, comp:'Grupa Sygut Sp. z o.o. Sp.k.', cont:'Tomasz Erdmann', mail:'tomasz.erdmann@sygut.example.com', tel:null},
+  {id:57, comp:'Gabinety Erdmann Sp.k.', cont:'pani Dorota Buczko', mail:null, tel:'+48 886 851 604'},
+  {id:58, comp:'Grupa Gawliczek-Frost Sp.k.', cont:'Janina Kasak', mail:'janina.kasak@gawliczek.example.com', tel:'+48 728 593 174'},
+  {id:59, comp:'Grupa Grabias Sp. z o.o.', cont:'Emil Tabiś', mail:'emil.tabis@grabias.example.com', tel:'606 758 692'},
+  {id:60, comp:'FPUH Berg i syn s.c.', cont:'pan Sebastian Figat', mail:'sebastian.figat@berg.example.com', tel:'+48 22 515 85 06'},
+  {id:61, comp:'Spółdzielnia Samoraj', cont:'pan Kornel Hutnik', mail:'kornel.hutnik@samoraj.example.com', tel:'609 318 393'},
+  {id:62, comp:'Kazimierczyk-Dziwak S.A.', cont:'Jacek Suchora', mail:null, tel:'+48 32 210 20 53'},
+  {id:63, comp:'Stowarzyszenie Paśnik-Juras Sp. z o.o. Sp.k.', cont:null, mail:'oo.spk@pasnik.example.com', tel:'537 758 917'},
+  {id:64, comp:'Spółdzielnia Grzelec-Andrzejuk Sp.k.', cont:'Róża Apostel', mail:'roza.apostel@grzelec.example.com', tel:'+48 511 771 159'},
+  {id:65, comp:'Stanisławek-Chruszcz Sp. z o.o. Sp.k.', cont:'pani Rozalia Potaczek', mail:'rozalia.potaczek@stanislawek.example.com', tel:'571 836 736'},
+  {id:66, comp:'REMBACZ-CHOLEWKA S.C.', cont:'Natan Mirga', mail:'NATAN.MIRGA@REMBACZ.EXAMPLE.COM', tel:null},
+  {id:67, comp:'  Grupa Staś ', cont:'pani Krystyna Owczarczak', mail:'KRYSTYNA.OWCZARCZAK@STAS.EXAMPLE.COM', tel:null},
+  {id:68, comp:'SŁONKA SP. Z O.O. SP.K.', cont:'Kalina Szajda', mail:'KALINA.SZAJDA@SLONKA.EXAMPLE.COM', tel:null},
+  {id:69, comp:'GABINETY ERDMANN SP.K.', cont:'pani Dorota Buczko', mail:'DOROTA.BUCZKO@ERDMANN.EXAMPLE.COM', tel:null},
+  {id:70, comp:'FPUH CYBUL I SYN S.C.', cont:null, mail:'SYN.SC@CYBUL.EXAMPLE.COM', tel:null},
+  {id:71, comp:'FPUH DUDZICZ S.C.', cont:'pani Sandra Sałuda', mail:'SANDRA.SALUDA@DUDZICZ.EXAMPLE.COM', tel:null},
+  {id:72, comp:'  FPUH Mudlaff Sp.j. ', cont:null, mail:'MUDLAFF.SPJ@MUDLAFF.EXAMPLE.COM', tel:null}
+];
+
+/* Orders: komplet 377 wierszy */
+const ORDERS = [
+  {id:1, cust:36, date:'2025-12-22', status:'Completed', city:'poznań'},
+  {id:2, cust:25, date:'2024-08-27', status:'Completed', city:'berlin'},
+  {id:3, cust:63, date:'2025-12-21', status:'Refunded', city:'Lublin'},
+  {id:4, cust:61, date:'2025-10-16', status:'Completed', city:'Sopot'},
+  {id:5, cust:12, date:'2025-03-29', status:'Completed', city:'katowice'},
+  {id:6, cust:32, date:'2025-04-10', status:'Completed', city:'Lublin'},
+  {id:7, cust:61, date:'2025-12-19', status:'Completed', city:'Sopot'},
+  {id:8, cust:71, date:'2025-05-05', status:'Completed', city:'Praga'},
+  {id:10, cust:25, date:'2025-04-20', status:'Completed', city:'berlin'},
+  {id:11, cust:24, date:'2024-12-14', status:'Completed', city:'Praga'},
+  {id:12, cust:36, date:'2025-11-20', status:'Completed', city:'poznań'},
+  {id:13, cust:13, date:'2024-12-16', status:'Completed', city:'Łódź'},
+  {id:14, cust:23, date:'2025-04-06', status:'Completed', city:'Praga'},
+  {id:15, cust:17, date:'2025-03-08', status:'Completed', city:'Lublin'},
+  {id:16, cust:38, date:'2024-10-08', status:'Completed', city:'Poznań'},
+  {id:17, cust:63, date:'2024-09-14', status:'Completed', city:'Lublin'},
+  {id:18, cust:61, date:'2025-10-04', status:'Completed', city:'Sopot'},
+  {id:19, cust:7, date:'2025-02-14', status:'Completed', city:'Bydgoszcz'},
+  {id:20, cust:9, date:'2025-07-16', status:'Completed', city:'bydgoszcz'},
+  {id:21, cust:7, date:'2024-11-03', status:'Completed', city:'Bydgoszcz'},
+  {id:22, cust:39, date:'2024-08-27', status:'Completed', city:'Wrocław'},
+  {id:23, cust:54, date:'2025-01-18', status:'Pending', city:'bydgoszcz'},
+  {id:24, cust:58, date:'2025-08-28', status:'Completed', city:'Kraków'},
+  {id:25, cust:55, date:'2025-04-09', status:'Completed', city:'szczecin'},
+  {id:26, cust:13, date:'2024-12-30', status:'Completed', city:'Łódź'},
+  {id:27, cust:11, date:'2024-11-08', status:'Completed', city:'LUBLIN'},
+  {id:28, cust:10, date:'2024-11-08', status:'Completed', city:'ŁÓDŹ'},
+  {id:29, cust:61, date:'2025-03-26', status:'Completed', city:'Sopot'},
+  {id:30, cust:37, date:'2025-09-08', status:'Completed', city:'gdynia'},
+  {id:31, cust:34, date:'2024-12-20', status:'Completed', city:'Gdynia'},
+  {id:32, cust:29, date:'2024-10-31', status:'Completed', city:'Lublin'},
+  {id:33, cust:10, date:'2024-08-01', status:'Completed', city:'ŁÓDŹ'},
+  {id:34, cust:37, date:'2025-08-24', status:'Completed', city:'gdynia'},
+  {id:35, cust:39, date:'2025-07-18', status:'Completed', city:'Wrocław'},
+  {id:36, cust:64, date:'2025-08-23', status:'Completed', city:'Bratysława'},
+  {id:37, cust:56, date:'2025-04-27', status:'Completed', city:'LUBLIN'},
+  {id:38, cust:12, date:'2025-01-21', status:'Cancelled', city:'katowice'},
+  {id:39, cust:null, date:'2025-03-03', status:'Completed', city:'Szczecin'},
+  {id:40, cust:23, date:'2025-09-25', status:'Completed', city:'Praga'},
+  {id:41, cust:36, date:'2024-12-03', status:'Completed', city:'poznań'},
+  {id:42, cust:63, date:'2024-09-02', status:'Completed', city:'Lublin'},
+  {id:43, cust:43, date:'2025-04-25', status:'Cancelled', city:'Berlin'},
+  {id:44, cust:21, date:'2025-05-04', status:'Completed', city:'Bydgoszcz'},
+  {id:45, cust:37, date:'2025-07-16', status:'Refunded', city:'gdynia'},
+  {id:46, cust:59, date:'2024-08-30', status:'Completed', city:'Sopot'},
+  {id:47, cust:15, date:'2025-07-19', status:'Completed', city:'Katowice'},
+  {id:48, cust:1, date:'2025-12-08', status:'Completed', city:'Berlin'},
+  {id:49, cust:25, date:'2025-11-13', status:'Completed', city:'berlin'},
+  {id:50, cust:64, date:'2025-08-27', status:'Refunded', city:'Bratysława'},
+  {id:51, cust:35, date:'2025-12-15', status:'Completed', city:'Bydgoszcz'},
+  {id:53, cust:31, date:'2024-11-10', status:'Completed', city:'LUBLIN'},
+  {id:54, cust:71, date:'2025-07-23', status:'Completed', city:'Praga'},
+  {id:55, cust:15, date:'2025-09-16', status:'Completed', city:'Katowice'},
+  {id:56, cust:null, date:'2025-10-24', status:'Cancelled', city:'Szczecin'},
+  {id:57, cust:35, date:'2025-07-31', status:'Completed', city:'Wrocław'},
+  {id:58, cust:59, date:'2025-12-17', status:'Completed', city:'Sopot'},
+  {id:59, cust:66, date:'2024-10-18', status:'Completed', city:'Lublin'},
+  {id:60, cust:54, date:'2025-05-15', status:'Completed', city:'bydgoszcz'},
+  {id:61, cust:1, date:'2025-03-17', status:'Cancelled', city:'Berlin'},
+  {id:62, cust:63, date:'2024-10-31', status:'Completed', city:'Lublin'},
+  {id:63, cust:45, date:'2025-05-07', status:'Completed', city:'Gdańsk'},
+  {id:64, cust:49, date:'2025-09-10', status:'Completed', city:'Katowice'},
+  {id:65, cust:31, date:'2025-06-28', status:'Completed', city:'LUBLIN'},
+  {id:66, cust:53, date:'2024-07-15', status:'Completed', city:'WIEDEŃ'},
+  {id:67, cust:49, date:'2025-07-01', status:'Completed', city:'Katowice'},
+  {id:68, cust:20, date:'2025-10-21', status:'Completed', city:'Szczecin'},
+  {id:69, cust:43, date:'2024-09-11', status:'Completed', city:'Berlin'},
+  {id:70, cust:59, date:'2024-06-16', status:'Cancelled', city:'Sopot'},
+  {id:71, cust:20, date:'2024-08-16', status:'Completed', city:'Szczecin'},
+  {id:72, cust:34, date:'2025-05-13', status:'Completed', city:'Gdynia'},
+  {id:73, cust:11, date:'2025-05-03', status:'Cancelled', city:'LUBLIN'},
+  {id:74, cust:49, date:'2025-04-21', status:'Completed', city:'Katowice'},
+  {id:75, cust:63, date:'2025-12-07', status:'Completed', city:'Lublin'},
+  {id:76, cust:31, date:'2025-03-22', status:'Completed', city:'LUBLIN'},
+  {id:77, cust:56, date:'2024-09-09', status:'Refunded', city:'LUBLIN'},
+  {id:78, cust:13, date:'2025-08-29', status:'Completed', city:'Łódź'},
+  {id:79, cust:4, date:'2024-07-18', status:'Completed', city:'Sopot'},
+  {id:80, cust:38, date:'2025-06-03', status:'Completed', city:'Poznań'},
+  {id:81, cust:32, date:'2025-11-26', status:'Completed', city:'Lublin'},
+  {id:82, cust:24, date:'2024-11-22', status:'Completed', city:'Praga'},
+  {id:83, cust:49, date:'2025-02-02', status:'Completed', city:'Gdańsk'},
+  {id:84, cust:30, date:'2025-09-16', status:'Completed', city:'WILNO'},
+  {id:85, cust:33, date:'2024-06-10', status:'Completed', city:'Gdynia'},
+  {id:86, cust:70, date:'2024-11-09', status:'Completed', city:'Lublin'},
+  {id:87, cust:45, date:'2025-04-03', status:'Completed', city:'Sopot'},
+  {id:88, cust:33, date:'2025-09-11', status:'Completed', city:'Gdynia'},
+  {id:89, cust:50, date:'2025-10-08', status:'Completed', city:'łódź'},
+  {id:90, cust:46, date:'2025-03-30', status:'Cancelled', city:'Lublin'},
+  {id:91, cust:51, date:'2025-03-09', status:'Completed', city:'Lublin'},
+  {id:92, cust:7, date:'2025-10-22', status:'Completed', city:'Bydgoszcz'},
+  {id:93, cust:30, date:'2025-05-27', status:'Completed', city:'WILNO'},
+  {id:94, cust:33, date:'2024-10-19', status:'Completed', city:'Gdynia'},
+  {id:95, cust:6, date:'2025-04-13', status:'Completed', city:'Gdynia'},
+  {id:96, cust:47, date:'2024-10-13', status:'Completed', city:'Łódź'},
+  {id:97, cust:54, date:'2024-11-27', status:'Completed', city:'bydgoszcz'},
+  {id:98, cust:70, date:'2025-06-10', status:'Completed', city:'Lublin'},
+  {id:99, cust:35, date:'2024-11-16', status:'Completed', city:'Bydgoszcz'},
+  {id:100, cust:38, date:'2025-05-13', status:'Completed', city:'Poznań'},
+  {id:101, cust:10, date:'2024-10-23', status:'Refunded', city:'Gdynia'},
+  {id:102, cust:51, date:'2025-12-23', status:'Completed', city:'Lublin'},
+  {id:103, cust:51, date:'2024-06-15', status:'Completed', city:'Lublin'},
+  {id:104, cust:59, date:'2025-06-13', status:'Cancelled', city:'Sopot'},
+  {id:105, cust:34, date:'2025-06-26', status:'Completed', city:'Kraków'},
+  {id:106, cust:30, date:'2025-09-26', status:'Completed', city:'WILNO'},
+  {id:107, cust:72, date:'2025-05-02', status:'Completed', city:'Katowice'},
+  {id:108, cust:9, date:'2025-09-19', status:'Cancelled', city:'bydgoszcz'},
+  {id:109, cust:53, date:'2024-09-28', status:'Completed', city:'WIEDEŃ'},
+  {id:110, cust:20, date:'2025-04-08', status:'Completed', city:'gdańsk'},
+  {id:111, cust:31, date:'2025-12-03', status:'Completed', city:'LUBLIN'},
+  {id:112, cust:48, date:'2025-12-06', status:'Completed', city:'Kraków'},
+  {id:113, cust:20, date:'2025-07-30', status:'Completed', city:'Szczecin'},
+  {id:114, cust:63, date:'2025-07-23', status:'Completed', city:'Lublin'},
+  {id:115, cust:48, date:'2025-01-09', status:'Completed', city:'Kraków'},
+  {id:116, cust:31, date:'2025-06-07', status:'Completed', city:'Łódź'},
+  {id:117, cust:70, date:'2025-06-03', status:'Completed', city:'Lublin'},
+  {id:118, cust:25, date:'2024-10-04', status:'Completed', city:'berlin'},
+  {id:119, cust:28, date:'2024-06-22', status:'Completed', city:'łódź'},
+  {id:120, cust:32, date:'2024-10-07', status:'Completed', city:'Lublin'},
+  {id:121, cust:71, date:'2024-12-30', status:'Completed', city:'Praga'},
+  {id:122, cust:30, date:'2025-05-03', status:'Pending', city:'WILNO'},
+  {id:123, cust:1, date:'2025-03-11', status:'Completed', city:'Lublin'},
+  {id:124, cust:33, date:'2024-11-26', status:'Completed', city:'Gdynia'},
+  {id:125, cust:4, date:'2024-10-13', status:'Completed', city:'Sopot'},
+  {id:126, cust:31, date:'2025-04-28', status:'Completed', city:'LUBLIN'},
+  {id:127, cust:7, date:'2024-10-08', status:'Refunded', city:'Bydgoszcz'},
+  {id:128, cust:15, date:'2024-08-05', status:'Completed', city:'Katowice'},
+  {id:129, cust:47, date:'2025-11-08', status:'Completed', city:'Łódź'},
+  {id:130, cust:65, date:'2025-01-13', status:'Completed', city:'Lublin'},
+  {id:131, cust:67, date:'2025-04-05', status:'Completed', city:'katowice'},
+  {id:132, cust:4, date:'2024-08-02', status:'Completed', city:'Sopot'},
+  {id:133, cust:55, date:'2024-09-19', status:'Completed', city:'szczecin'},
+  {id:134, cust:57, date:'2024-08-15', status:'Completed', city:'Warszawa'},
+  {id:135, cust:19, date:'2024-08-07', status:'Completed', city:'Gdynia'},
+  {id:136, cust:71, date:'2025-04-29', status:'Completed', city:'Lublin'},
+  {id:137, cust:38, date:'2025-09-08', status:'Completed', city:'Poznań'},
+  {id:138, cust:13, date:'2024-09-26', status:'Completed', city:'Łódź'},
+  {id:139, cust:71, date:'2025-01-07', status:'Completed', city:'Praga'},
+  {id:140, cust:30, date:'2025-07-29', status:'Completed', city:'WILNO'},
+  {id:141, cust:52, date:'2025-07-31', status:'Refunded', city:'Łódź'},
+  {id:142, cust:55, date:'2025-04-17', status:'Cancelled', city:'szczecin'},
+  {id:143, cust:20, date:'2025-09-29', status:'Completed', city:'Szczecin'},
+  {id:144, cust:11, date:'2024-09-04', status:'Completed', city:'LUBLIN'},
+  {id:145, cust:48, date:'2024-10-12', status:'Completed', city:'Kraków'},
+  {id:146, cust:72, date:'2025-12-28', status:'Completed', city:'Katowice'},
+  {id:147, cust:53, date:'2025-05-29', status:'Cancelled', city:'Szczecin'},
+  {id:148, cust:7, date:'2025-03-22', status:'Completed', city:'Bydgoszcz'},
+  {id:149, cust:14, date:'2025-11-02', status:'Completed', city:'gdynia'},
+  {id:150, cust:62, date:'2025-01-16', status:'Completed', city:'Kraków'},
+  {id:151, cust:72, date:'2025-06-12', status:'Completed', city:'Katowice'},
+  {id:152, cust:29, date:'2025-08-14', status:'Completed', city:'Katowice'},
+  {id:153, cust:72, date:'2024-06-27', status:'Completed', city:'Sopot'},
+  {id:154, cust:35, date:'2024-06-30', status:'Completed', city:'Szczecin'},
+  {id:155, cust:40, date:'2025-05-14', status:'Completed', city:'Kraków'},
+  {id:156, cust:19, date:'2025-07-16', status:'Completed', city:'Gdynia'},
+  {id:157, cust:4, date:'2024-09-02', status:'Refunded', city:'Sopot'},
+  {id:158, cust:49, date:'2025-08-04', status:'Completed', city:'Katowice'},
+  {id:159, cust:48, date:'2025-04-16', status:'Cancelled', city:'Kraków'},
+  {id:160, cust:11, date:'2024-07-24', status:'Completed', city:'LUBLIN'},
+  {id:161, cust:7, date:'2024-08-23', status:'Completed', city:'Bydgoszcz'},
+  {id:162, cust:55, date:'2025-10-11', status:'Completed', city:'szczecin'},
+  {id:163, cust:35, date:'2025-01-07', status:'Refunded', city:'Szczecin'},
+  {id:164, cust:45, date:'2025-08-15', status:'Completed', city:'Gdańsk'},
+  {id:165, cust:63, date:'2025-11-22', status:'Cancelled', city:'Lublin'},
+  {id:166, cust:29, date:'2025-07-10', status:'Completed', city:'Lublin'},
+  {id:167, cust:20, date:'2025-04-05', status:'Completed', city:'Bydgoszcz'},
+  {id:168, cust:33, date:'2025-03-24', status:'Completed', city:'Gdynia'},
+  {id:169, cust:64, date:'2025-08-15', status:'Completed', city:'Bratysława'},
+  {id:170, cust:69, date:'2025-01-22', status:'Completed', city:'Warszawa'},
+  {id:171, cust:46, date:'2024-08-13', status:'Completed', city:'Lublin'},
+  {id:172, cust:6, date:'2025-08-21', status:'Completed', city:'Gdynia'},
+  {id:173, cust:10, date:'2025-04-17', status:'Completed', city:'ŁÓDŹ'},
+  {id:174, cust:52, date:'2025-08-02', status:'Completed', city:'Łódź'},
+  {id:175, cust:20, date:'2025-04-29', status:'Completed', city:'Szczecin'},
+  {id:176, cust:59, date:'2025-06-06', status:'Completed', city:'Sopot'},
+  {id:177, cust:14, date:'2025-02-05', status:'Completed', city:'gdynia'},
+  {id:178, cust:68, date:'2024-08-20', status:'Completed', city:'Kraków'},
+  {id:179, cust:44, date:'2025-01-13', status:'Completed', city:'Bydgoszcz'},
+  {id:180, cust:10, date:'2025-11-05', status:'Completed', city:'ŁÓDŹ'},
+  {id:181, cust:66, date:'2024-12-16', status:'Pending', city:'Lublin'},
+  {id:182, cust:19, date:'2025-01-28', status:'Completed', city:'Gdynia'},
+  {id:183, cust:26, date:'2024-11-25', status:'Completed', city:'praga'},
+  {id:184, cust:10, date:'2024-11-29', status:'Pending', city:'ŁÓDŹ'},
+  {id:185, cust:60, date:'2025-12-30', status:'Refunded', city:'Poznań'},
+  {id:186, cust:42, date:'2025-04-20', status:'Completed', city:'wrocław'},
+  {id:187, cust:61, date:'2025-08-27', status:'Completed', city:'Sopot'},
+  {id:188, cust:36, date:'2024-07-28', status:'Completed', city:'poznań'},
+  {id:189, cust:40, date:'2025-09-16', status:'Completed', city:'Kraków'},
+  {id:190, cust:48, date:'2025-03-21', status:'Completed', city:'Kraków'},
+  {id:191, cust:12, date:'2025-11-02', status:'Completed', city:'katowice'},
+  {id:192, cust:71, date:'2024-07-13', status:'Completed', city:'Katowice'},
+  {id:193, cust:25, date:'2025-04-26', status:'Completed', city:'berlin'},
+  {id:194, cust:20, date:'2024-08-03', status:'Completed', city:'Szczecin'},
+  {id:195, cust:44, date:'2024-08-26', status:'Completed', city:'Bydgoszcz'},
+  {id:196, cust:6, date:'2025-02-09', status:'Cancelled', city:'Gdynia'},
+  {id:197, cust:57, date:'2025-11-19', status:'Completed', city:'Warszawa'},
+  {id:199, cust:44, date:'2024-07-24', status:'Completed', city:'Bydgoszcz'},
+  {id:200, cust:9, date:'2025-05-04', status:'Completed', city:'bydgoszcz'},
+  {id:201, cust:50, date:'2025-03-18', status:'Completed', city:'łódź'},
+  {id:202, cust:20, date:'2025-05-08', status:'Completed', city:'Szczecin'},
+  {id:203, cust:19, date:'2025-05-25', status:'Completed', city:'Sopot'},
+  {id:204, cust:51, date:'2024-10-11', status:'Completed', city:'Lublin'},
+  {id:205, cust:11, date:'2025-04-14', status:'Completed', city:'LUBLIN'},
+  {id:206, cust:43, date:'2024-10-09', status:'Cancelled', city:'Berlin'},
+  {id:207, cust:68, date:'2024-09-04', status:'Completed', city:'Kraków'},
+  {id:208, cust:66, date:'2025-06-06', status:'Completed', city:'Lublin'},
+  {id:209, cust:24, date:'2025-01-06', status:'Completed', city:'Bydgoszcz'},
+  {id:210, cust:25, date:'2025-01-18', status:'Completed', city:'berlin'},
+  {id:211, cust:38, date:'2024-09-12', status:'Completed', city:'Poznań'},
+  {id:212, cust:68, date:'2024-07-09', status:'Completed', city:'Kraków'},
+  {id:213, cust:17, date:'2025-06-21', status:'Completed', city:'WIEDEŃ'},
+  {id:214, cust:20, date:'2025-08-23', status:'Completed', city:'Łódź'},
+  {id:215, cust:31, date:'2025-08-29', status:'Completed', city:'LUBLIN'},
+  {id:216, cust:58, date:'2025-01-26', status:'Completed', city:'Kraków'},
+  {id:217, cust:61, date:'2024-12-16', status:'Completed', city:'Sopot'},
+  {id:218, cust:57, date:'2025-09-16', status:'Pending', city:'Warszawa'},
+  {id:219, cust:49, date:'2025-10-28', status:'Completed', city:'Katowice'},
+  {id:220, cust:21, date:'2024-12-22', status:'Completed', city:'Bydgoszcz'},
+  {id:221, cust:33, date:'2024-07-24', status:'Completed', city:'Gdynia'},
+  {id:222, cust:48, date:'2025-12-20', status:'Completed', city:'Kraków'},
+  {id:223, cust:67, date:'2024-10-06', status:'Completed', city:'katowice'},
+  {id:224, cust:21, date:'2025-03-07', status:'Completed', city:'Gdańsk'},
+  {id:225, cust:56, date:'2024-09-02', status:'Completed', city:'LUBLIN'},
+  {id:226, cust:45, date:'2024-06-28', status:'Completed', city:'Gdańsk'},
+  {id:227, cust:65, date:'2025-06-18', status:'Completed', city:'Lublin'},
+  {id:228, cust:11, date:'2025-06-19', status:'Completed', city:'LUBLIN'},
+  {id:229, cust:13, date:'2025-05-10', status:'Completed', city:'Łódź'},
+  {id:230, cust:37, date:'2025-09-27', status:'Cancelled', city:'gdynia'},
+  {id:231, cust:61, date:'2025-09-03', status:'Completed', city:'Sopot'},
+  {id:232, cust:11, date:'2024-06-20', status:'Completed', city:'LUBLIN'},
+  {id:233, cust:20, date:'2025-12-14', status:'Refunded', city:'Szczecin'},
+  {id:234, cust:55, date:'2024-09-22', status:'Pending', city:'szczecin'},
+  {id:235, cust:39, date:'2024-10-03', status:'Completed', city:'Wrocław'},
+  {id:236, cust:59, date:'2024-08-04', status:'Completed', city:'Sopot'},
+  {id:237, cust:64, date:'2025-12-01', status:'Completed', city:'Bratysława'},
+  {id:238, cust:31, date:'2024-10-26', status:'Completed', city:'LUBLIN'},
+  {id:239, cust:46, date:'2025-02-02', status:'Completed', city:'Lublin'},
+  {id:240, cust:11, date:'2025-11-19', status:'Completed', city:'LUBLIN'},
+  {id:241, cust:68, date:'2025-12-10', status:'Completed', city:'Kraków'},
+  {id:242, cust:65, date:'2025-12-20', status:'Completed', city:'Lublin'},
+  {id:243, cust:61, date:'2024-07-15', status:'Completed', city:'Sopot'},
+  {id:244, cust:48, date:'2025-02-15', status:'Refunded', city:'Kraków'},
+  {id:245, cust:9, date:'2025-05-20', status:'Completed', city:'bydgoszcz'},
+  {id:246, cust:14, date:'2025-05-07', status:'Completed', city:'gdynia'},
+  {id:247, cust:70, date:'2025-05-13', status:'Completed', city:'Lublin'},
+  {id:248, cust:60, date:'2025-10-04', status:'Completed', city:'Poznań'},
+  {id:249, cust:18, date:'2024-08-04', status:'Cancelled', city:'Kraków'},
+  {id:250, cust:59, date:'2024-07-08', status:'Completed', city:'Sopot'},
+  {id:251, cust:26, date:'2024-07-13', status:'Completed', city:'Lublin'},
+  {id:252, cust:51, date:'2025-12-09', status:'Completed', city:'Lublin'},
+  {id:253, cust:25, date:'2025-03-20', status:'Completed', city:'berlin'},
+  {id:254, cust:7, date:'2025-05-06', status:'Completed', city:'Bydgoszcz'},
+  {id:255, cust:48, date:'2025-08-22', status:'Completed', city:'Kraków'},
+  {id:256, cust:50, date:'2025-05-14', status:'Completed', city:'łódź'},
+  {id:257, cust:64, date:'2025-06-12', status:'Completed', city:'Bratysława'},
+  {id:258, cust:11, date:'2025-08-09', status:'Completed', city:'LUBLIN'},
+  {id:259, cust:24, date:'2025-12-11', status:'Completed', city:'Praga'},
+  {id:260, cust:11, date:'2025-05-02', status:'Completed', city:'LUBLIN'},
+  {id:261, cust:58, date:'2025-08-11', status:'Completed', city:'Kraków'},
+  {id:262, cust:45, date:'2025-09-01', status:'Completed', city:'Gdańsk'},
+  {id:263, cust:46, date:'2025-08-20', status:'Completed', city:'Lublin'},
+  {id:264, cust:8, date:'2024-08-16', status:'Cancelled', city:'Wilno'},
+  {id:265, cust:47, date:'2025-11-08', status:'Refunded', city:'Łódź'},
+  {id:266, cust:4, date:'2024-10-25', status:'Completed', city:'Sopot'},
+  {id:267, cust:57, date:'2024-07-06', status:'Completed', city:'Warszawa'},
+  {id:268, cust:47, date:'2025-06-06', status:'Completed', city:'Warszawa'},
+  {id:269, cust:20, date:'2025-09-04', status:'Completed', city:'Szczecin'},
+  {id:270, cust:10, date:'2024-10-19', status:'Completed', city:'ŁÓDŹ'},
+  {id:271, cust:41, date:'2025-03-13', status:'Completed', city:'Warszawa'},
+  {id:272, cust:24, date:'2025-10-25', status:'Completed', city:'Praga'},
+  {id:273, cust:72, date:'2024-09-29', status:'Completed', city:'Katowice'},
+  {id:274, cust:58, date:'2025-01-06', status:'Completed', city:'Kraków'},
+  {id:275, cust:63, date:'2024-12-22', status:'Completed', city:'Lublin'},
+  {id:276, cust:10, date:'2025-09-06', status:'Completed', city:'ŁÓDŹ'},
+  {id:277, cust:57, date:'2024-08-29', status:'Cancelled', city:'Łódź'},
+  {id:278, cust:45, date:'2024-08-06', status:'Completed', city:'Gdańsk'},
+  {id:279, cust:39, date:'2024-11-09', status:'Cancelled', city:'Wrocław'},
+  {id:280, cust:23, date:'2025-06-06', status:'Completed', city:'Praga'},
+  {id:281, cust:26, date:'2024-10-21', status:'Completed', city:'praga'},
+  {id:282, cust:4, date:'2025-06-05', status:'Completed', city:'Sopot'},
+  {id:283, cust:60, date:'2025-12-17', status:'Completed', city:'Poznań'},
+  {id:284, cust:12, date:'2024-08-07', status:'Completed', city:'katowice'},
+  {id:285, cust:62, date:'2025-11-21', status:'Completed', city:'Kraków'},
+  {id:286, cust:10, date:'2024-10-07', status:'Completed', city:'ŁÓDŹ'},
+  {id:287, cust:58, date:'2025-09-21', status:'Cancelled', city:'Kraków'},
+  {id:288, cust:17, date:'2025-12-17', status:'Completed', city:'WIEDEŃ'},
+  {id:289, cust:17, date:'2025-08-18', status:'Completed', city:'Warszawa'},
+  {id:290, cust:16, date:'2025-11-13', status:'Completed', city:'Praga'},
+  {id:291, cust:21, date:'2025-04-27', status:'Cancelled', city:'Bydgoszcz'},
+  {id:292, cust:67, date:'2025-03-18', status:'Completed', city:'katowice'},
+  {id:293, cust:71, date:'2025-03-09', status:'Completed', city:'Praga'},
+  {id:294, cust:69, date:'2024-09-04', status:'Completed', city:'Warszawa'},
+  {id:295, cust:20, date:'2024-11-23', status:'Completed', city:'Szczecin'},
+  {id:296, cust:44, date:'2025-12-30', status:'Completed', city:'Bydgoszcz'},
+  {id:297, cust:4, date:'2024-08-23', status:'Completed', city:'Katowice'},
+  {id:298, cust:34, date:'2025-01-02', status:'Pending', city:'Gdynia'},
+  {id:299, cust:4, date:'2025-10-23', status:'Completed', city:'Sopot'},
+  {id:300, cust:39, date:'2025-10-08', status:'Completed', city:'Wrocław'},
+  {id:301, cust:52, date:'2025-04-01', status:'Completed', city:'Łódź'},
+  {id:302, cust:8, date:'2024-11-09', status:'Completed', city:'Wilno'},
+  {id:303, cust:60, date:'2024-12-26', status:'Completed', city:'Poznań'},
+  {id:304, cust:41, date:'2025-04-23', status:'Refunded', city:'Łódź'},
+  {id:305, cust:52, date:'2024-10-12', status:'Refunded', city:'Łódź'},
+  {id:306, cust:72, date:'2024-09-17', status:'Completed', city:'Katowice'},
+  {id:307, cust:16, date:'2025-03-01', status:'Completed', city:'Praga'},
+  {id:308, cust:13, date:'2024-07-22', status:'Completed', city:'Katowice'},
+  {id:309, cust:54, date:'2025-02-10', status:'Completed', city:'bydgoszcz'},
+  {id:310, cust:41, date:'2024-12-12', status:'Refunded', city:'WROCŁAW'},
+  {id:311, cust:66, date:'2025-09-22', status:'Completed', city:'Lublin'},
+  {id:312, cust:64, date:'2024-06-24', status:'Completed', city:'Lublin'},
+  {id:313, cust:59, date:'2025-02-02', status:'Completed', city:'Sopot'},
+  {id:314, cust:7, date:'2024-07-22', status:'Completed', city:'Bydgoszcz'},
+  {id:315, cust:61, date:'2025-03-20', status:'Completed', city:'Sopot'},
+  {id:316, cust:14, date:'2025-08-16', status:'Completed', city:'gdynia'},
+  {id:317, cust:47, date:'2025-07-18', status:'Completed', city:'Łódź'},
+  {id:318, cust:7, date:'2025-12-28', status:'Completed', city:'Bydgoszcz'},
+  {id:319, cust:37, date:'2024-08-15', status:'Completed', city:'gdynia'},
+  {id:320, cust:71, date:'2025-03-14', status:'Completed', city:'Praga'},
+  {id:321, cust:16, date:'2024-10-10', status:'Completed', city:'Praga'},
+  {id:322, cust:44, date:'2025-12-24', status:'Completed', city:'Bydgoszcz'},
+  {id:323, cust:26, date:'2025-11-04', status:'Completed', city:'praga'},
+  {id:324, cust:6, date:'2024-07-10', status:'Completed', city:'Gdynia'},
+  {id:325, cust:61, date:'2025-11-14', status:'Completed', city:'Sopot'},
+  {id:326, cust:66, date:'2024-10-22', status:'Completed', city:'Łódź'},
+  {id:327, cust:21, date:'2025-07-08', status:'Completed', city:'Bydgoszcz'},
+  {id:328, cust:39, date:'2025-05-11', status:'Completed', city:'Wrocław'},
+  {id:329, cust:69, date:'2025-10-15', status:'Cancelled', city:'Warszawa'},
+  {id:330, cust:61, date:'2024-06-18', status:'Completed', city:'Sopot'},
+  {id:331, cust:15, date:'2025-08-01', status:'Completed', city:'Katowice'},
+  {id:332, cust:4, date:'2025-09-29', status:'Completed', city:'Katowice'},
+  {id:333, cust:30, date:'2024-07-23', status:'Completed', city:'WILNO'},
+  {id:334, cust:68, date:'2025-06-25', status:'Completed', city:'Kraków'},
+  {id:335, cust:32, date:'2024-07-03', status:'Completed', city:'Kraków'},
+  {id:336, cust:25, date:'2024-06-20', status:'Completed', city:'berlin'},
+  {id:337, cust:20, date:'2025-07-28', status:'Cancelled', city:'Szczecin'},
+  {id:338, cust:65, date:'2025-09-26', status:'Refunded', city:'Lublin'},
+  {id:339, cust:18, date:'2025-11-14', status:'Completed', city:'Kraków'},
+  {id:340, cust:62, date:'2025-11-21', status:'Completed', city:'Kraków'},
+  {id:341, cust:23, date:'2025-09-14', status:'Completed', city:'Praga'},
+  {id:342, cust:46, date:'2025-02-26', status:'Completed', city:'Lublin'},
+  {id:343, cust:32, date:'2025-03-13', status:'Completed', city:'Lublin'},
+  {id:344, cust:39, date:'2025-03-23', status:'Cancelled', city:'Wrocław'},
+  {id:345, cust:63, date:'2025-04-21', status:'Completed', city:'Lublin'},
+  {id:346, cust:36, date:'2025-03-22', status:'Completed', city:'poznań'},
+  {id:347, cust:70, date:'2025-06-24', status:'Completed', city:'Lublin'},
+  {id:348, cust:19, date:'2025-03-25', status:'Completed', city:'Gdynia'},
+  {id:349, cust:11, date:'2025-05-21', status:'Completed', city:'LUBLIN'},
+  {id:350, cust:62, date:'2025-01-06', status:'Completed', city:'Kraków'},
+  {id:351, cust:35, date:'2025-12-28', status:'Cancelled', city:'Szczecin'},
+  {id:352, cust:14, date:'2025-02-01', status:'Completed', city:'gdynia'},
+  {id:353, cust:68, date:'2025-01-18', status:'Completed', city:'Kraków'},
+  {id:354, cust:13, date:'2025-07-29', status:'Completed', city:'Łódź'},
+  {id:355, cust:13, date:'2024-10-19', status:'Completed', city:'Gdańsk'},
+  {id:356, cust:53, date:'2025-10-01', status:'Completed', city:'WIEDEŃ'},
+  {id:357, cust:37, date:'2025-04-25', status:'Completed', city:'gdynia'},
+  {id:358, cust:12, date:'2025-01-24', status:'Completed', city:'katowice'},
+  {id:359, cust:20, date:'2024-11-27', status:'Completed', city:'gdańsk'},
+  {id:360, cust:23, date:'2024-07-08', status:'Completed', city:'Praga'},
+  {id:361, cust:24, date:'2025-03-24', status:'Completed', city:'Praga'},
+  {id:362, cust:14, date:'2025-05-10', status:'Completed', city:'gdynia'},
+  {id:363, cust:70, date:'2025-11-19', status:'Completed', city:'Lublin'},
+  {id:364, cust:18, date:'2025-10-30', status:'Completed', city:'Kraków'},
+  {id:365, cust:15, date:'2025-05-05', status:'Completed', city:'Katowice'},
+  {id:366, cust:33, date:'2024-12-08', status:'Completed', city:'Gdynia'},
+  {id:367, cust:38, date:'2024-12-15', status:'Completed', city:'Poznań'},
+  {id:368, cust:52, date:'2025-08-12', status:'Completed', city:'Łódź'},
+  {id:369, cust:52, date:'2024-09-06', status:'Completed', city:'Bydgoszcz'},
+  {id:370, cust:42, date:'2025-02-10', status:'Completed', city:'wrocław'},
+  {id:371, cust:31, date:'2025-09-01', status:'Refunded', city:'LUBLIN'},
+  {id:372, cust:43, date:'2025-04-06', status:'Completed', city:'Berlin'},
+  {id:373, cust:20, date:'2025-02-23', status:'Completed', city:'Wrocław'},
+  {id:374, cust:31, date:'2024-08-03', status:'Cancelled', city:'LUBLIN'},
+  {id:375, cust:40, date:'2024-11-11', status:'Completed', city:'Kraków'},
+  {id:376, cust:40, date:'2024-09-29', status:'Completed', city:'Poznań'},
+  {id:377, cust:48, date:'2025-01-13', status:'Completed', city:'Bydgoszcz'},
+  {id:378, cust:20, date:'2025-09-09', status:'Refunded', city:'Łódź'},
+  {id:379, cust:54, date:'2025-12-15', status:'Completed', city:'bydgoszcz'},
+  {id:380, cust:28, date:'2025-02-09', status:'Cancelled', city:'łódź'}
+];
+
+/* Categories: komplet 10 wierszy, tak jak w bazie */
+const CATEGORIES = [
+  {id:1,  name:'Elektronika',      desc:'Sprzęt elektroniczny i akcesoria'},
+  {id:2,  name:'Odzież',           desc:'Ubrania i dodatki'},
+  {id:3,  name:'Dom i Ogród',      desc:'Wyposażenie domu i ogrodu'},
+  {id:4,  name:'Sport i Rekreacja',desc:'Sprzęt sportowy i turystyczny'},
+  {id:5,  name:'Książki',          desc:'Literatura i wydawnictwa'},
+  {id:6,  name:'Zabawki',          desc:'Zabawki i gry dla dzieci'},
+  {id:7,  name:'Uroda',            desc:'Kosmetyki i pielęgnacja'},
+  {id:8,  name:'Żywność i Napoje', desc:'Artykuły spożywcze'},
+  {id:9,  name:'Artykuły Biurowe', desc:'Wyposażenie biura'},
+  {id:10, name:'Zdrowie',          desc:'Suplementy i sprzęt medyczny'}
+];
+
+const money = v => v.toLocaleString('pl-PL',{minimumFractionDigits:2, maximumFractionDigits:2});
+const plWiersz = n => n + ' ' + (n===1 ? 'wiersz' : (n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14) ? 'wiersze' : 'wierszy'));
+
+const COLS = {
+  products:[
+    {k:'id',    h:'ProductID',    w:'92px',  v:r=>r.id, key:true, num:true},
+    {k:'name',  h:'ProductName',  w:'190px', v:r=>r.name},
+    {k:'cat',   h:'CategoryID',   w:'105px', v:r=>r.cat, num:true},
+    {k:'sup',   h:'SupplierID',   w:'105px', v:r=>r.sup, num:true},
+    {k:'price', h:'UnitPrice',    w:'100px', v:r=>money(r.price), num:true},
+    {k:'stock', h:'UnitsInStock', w:'120px', v:r=>r.stock, num:true},
+    {k:'disc',  h:'Discontinued', w:'118px', v:r=>r.disc, num:true}
+  ],
+  customers:[
+    {k:'id',   h:'CustomerID',  w:'105px', v:r=>r.id, key:true, num:true},
+    {k:'comp', h:'CompanyName', w:'215px', v:r=>r.comp},
+    {k:'cont', h:'ContactName', w:'200px', v:r=>r.cont},
+    {k:'mail', h:'Email',       w:'270px', v:r=>r.mail},
+    {k:'tel',  h:'Phone',       w:'150px', v:r=>r.tel}
+  ],
+  categories:[
+    {k:'id',   h:'CategoryID',   w:'115px', v:r=>r.id, key:true, num:true},
+    {k:'name', h:'CategoryName', w:'200px', v:r=>r.name},
+    {k:'desc', h:'Description',  w:'300px', v:r=>r.desc}
+  ],
+  orders:[
+    {k:'id',     h:'OrderID',     w:'90px',  v:r=>r.id, key:true, num:true},
+    {k:'cust',   h:'CustomerID',  w:'105px', v:r=>r.cust, num:true},
+    {k:'date',   h:'OrderDate',   w:'115px', v:r=>r.date},
+    {k:'status', h:'OrderStatus', w:'120px', v:r=>r.status},
+    {k:'city',   h:'ShipCity',    w:'110px', v:r=>r.city}
+  ]
+};
+const SRC = {products:PRODUCTS, categories:CATEGORIES, customers:CUSTOMERS, orders:ORDERS};
+const colOf = (t,k) => COLS[t].find(c=>c.k===k);
+
+/* ============================================================
+   2. KOLOROWANIE SQL
+   ============================================================ */
+const KW = new Set(('select from where order by asc desc as and or not in between like is null '+
+  'distinct top use go').split(' '));
+
+function highlight(src){
+  const esc = src.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/(--[^\n]*)|('[^']*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
+    (m, c, s, n, w) => {
+      if(c) return '<span class="c">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(n) return '<span class="n">'+n+'</span>';
+      const lw = w.toLowerCase();
+      if(KW.has(lw)) return '<span class="k">'+w+'</span>';
+      return w;
+    });
+}
+document.querySelectorAll('pre.sql[data-sql]').forEach(p => { p.innerHTML = highlight(p.textContent); });
+
+/* złożenie jednej linii kodu: treść, średnik na końcu zapytania, komentarz */
+/* klucz linii bez wcięć i wyrównania: samo przesunięcie kolumny AS
+   nie robi z linii nowej */
+function lineKey(l){ return l.t.replace(/\s+/g,' ').trim() + '|' + (l.cm||''); }
+
+function renderLines(model, hotKeys){
+  let lastCode = -1;
+  model.forEach((l,n)=>{ const t=l.t.trim(); if(t && !t.startsWith('--')) lastCode = n; });
+  const base = model.map((l,n)=> l.t + (n===lastCode ? ';' : ''));
+  const pad  = model.some(l=>l.cm) ? Math.max(...base.map(t=>t.length)) + 2 : 0;
+  return model.map((l,n)=>{
+    const key = lineKey(l);
+    const hot = hotKeys ? hotKeys.has(key) : !!l.hot;
+    const txt = l.cm ? base[n].padEnd(pad) + '-- ' + l.cm : base[n];
+    const code = highlight(txt).replace(/«/g,'<span class="dm">').replace(/»/g,'</span>');
+    return '<span class="ln'+(hot?' hot':'')+'">'+code+'</span>';
+  }).join('');
+}
+
+/* ============================================================
+   3. FLIP, czyli animacja przelotu wierszy na nowe pozycje
+   ============================================================ */
+function flip(container, mutate){
+  const before = new Map();
+  [...container.children].forEach(el => before.set(el, el.getBoundingClientRect()));
+  mutate();
+  const mm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if((mm && mm.matches) || !document.createElement('div').animate) return;
+  [...container.children].forEach(el => {
+    const b = before.get(el);
+    if(!b) return;
+    const a = el.getBoundingClientRect();
+    const dx = b.left - a.left, dy = b.top - a.top;
+    if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    el.animate(
+      [{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],
+      {duration:520, easing:'cubic-bezier(.2,.75,.3,1)'}
+    );
+  });
+}
+
+/* ============================================================
+   4. BUDOWANIE SIATKI
+   ============================================================ */
+function gridTemplate(cols){ return cols.map(c=>c.w).join(' '); }
+
+function cellText(el, val){
+  if(val === null || val === undefined){ el.innerHTML = '<span class="nullv">NULL</span>'; }
+  else { el.textContent = val; }
+}
+
+function buildHead(cols, aliased){
+  const el = document.createElement('div');
+  el.className = 'hrow' + (aliased ? ' aliased' : '');
+  el.style.gridTemplateColumns = gridTemplate(cols);
+  cols.forEach(c=>{
+    const s = document.createElement('span');
+    s.textContent = c.h;
+    if(c.num) s.className='num';
+    el.appendChild(s);
+  });
+  return el;
+}
+
+function fillRow(el, row, cols, extra){
+  el.innerHTML = '';
+  el.style.gridTemplateColumns = gridTemplate(cols) + (extra ? ' auto' : '');
+  cols.forEach(c=>{
+    const s = document.createElement('span');
+    cellText(s, c.v(row));
+    if(c.num) s.className = 'num';
+    if(c.key) s.className = (s.className+' cell-key').trim();
+    el.appendChild(s);
+  });
+  if(extra){
+    const s = document.createElement('span');
+    s.className = 'why';
+    el.appendChild(s);
+  }
+  return el;
+}
+
+function setWhy(el, html, cls){
+  const cell = el.lastElementChild;
+  if(!cell || !cell.classList.contains('why')) return;
+  cell.innerHTML = html ? '<span class="tag '+(cls||'')+'">'+html+'</span>' : '';
+}
+
+/* przy 54 lub 377 wierszach trafienia bywają poza widokiem: przewijamy do pierwszego */
+function scrollToRow(wrap, row){
+  if(!wrap || !row) return;
+  const grid = wrap.firstElementChild;
+  const top = Math.max(0, row.offsetTop - grid.offsetTop - 70);
+  try{
+    if(typeof wrap.scrollTo === 'function') wrap.scrollTo({top:top, behavior:'smooth'});
+    else wrap.scrollTop = top;
+  }catch(e){ wrap.scrollTop = top; }
+}
+
+/* kolumna może dołączyć do wyniku dopiero na którymś kroku */
+function selVisible(sel, f){ return !sel.at || (sel.at === 'where' ? !!f.filter : true); }
+
+function passAll(row, preds){ return preds.every(p=>p.fn(row)); }
+function failLabel(row, preds){
+  const f = preds.find(p=>!p.fn(row));
+  return f ? f.label : '';
+}
+
+/* ============================================================
+   5. SILNIK: przykład krok po kroku, z kodem, który rośnie
+   ============================================================ */
+class Demo{
+  constructor(host, spec){
+    this.host = host; this.spec = spec;
+    this.cols = COLS[spec.table];
+    this.rows = SRC[spec.table];
+    this.srcNodes = new Map();
+    this.resNodes = new Map();
+    this.buildSteps();
+    this.paint();
+    this.setStep(0);
+  }
+
+  buildSteps(){
+    const s = this.spec, st = [];
+    const has = {w:!!s.where, o:!!s.orderBy, t:!!s.top};
+    const k = s.keepSelect ? {project:1, alias:1} : {};
+    st.push({label:s.keepSelect ? 'punkt wyjścia' : 'FROM', cap:s.capRaw, f:Object.assign({}, k)});
+    if(has.w) st.push({label:'WHERE', cap:s.capWhere, f:Object.assign({}, k, {filter:1})});
+    if(!s.keepSelect) st.push({label:'SELECT', cap:s.capSelect,
+             f:{filter:has.w, project:1, alias:!s.aliasStep}});
+    if(s.aliasStep) st.push({label:'AS', cap:s.capAlias,
+             f:{filter:has.w, project:1, alias:1}});
+    if(s.distinct) st.push({label:'DISTINCT', cap:s.capDistinct,
+             f:{filter:has.w, project:1, alias:1, distinct:1}});
+    /* projekcja i aliasy są od tego miejsca ustalone, więc kolejne kroki je dziedziczą */
+    const post = {project:1, alias:1, distinct:s.distinct ? 1 : 0};
+    if(has.o) st.push({label:'ORDER BY', cap:s.capOrder, f:Object.assign({}, post, {filter:has.w, sort:1})});
+    if(has.t) st.push({label:'TOP '+s.top, cap:s.capTop, f:Object.assign({}, post, {filter:has.w, sort:has.o, top:1})});
+    this.steps = st;
+  }
+
+  /* model kodu dla danego kroku: klauzula SELECT budowana automatycznie,
+     reszta linii dopisywana zgodnie z kolejnością wykonania:
+     FROM -> WHERE -> SELECT -> ORDER BY -> TOP */
+  sqlModel(f){
+    const s = this.spec, t = s.table, out = [];
+    const sel = s.select.filter(x=>selVisible(x, f));
+    const hasAlias = sel.some(x=>x.alias);
+    let pre = 'SELECT';
+    if(f.distinct) pre += ' DISTINCT';
+    if(f.top) pre += ' TOP ' + s.top;
+
+    if(!f.project){
+      out.push({t: pre + ' *'});
+    } else if(!hasAlias){
+      out.push({t: pre + ' ' + sel.map(x=>colOf(t,x.k).h).join(', ')});
+    } else {
+      const w = Math.max(...sel.map(x=>colOf(t,x.k).h.length));
+      out.push({t: pre});
+      sel.forEach((x,i)=>{
+        const c = colOf(t, x.k);
+        let line = '    ' + (f.alias && x.alias ? c.h.padEnd(w) + ' AS ' + x.alias : c.h);
+        if(i < sel.length-1) line += ',';
+        out.push({t: line});
+      });
+    }
+    s.body.forEach(l=>{
+      const on = (l.phase === 'from'
+              || (l.phase === 'where' && f.filter)
+              || (l.phase === 'order' && f.sort))
+              && !(l.until === 'order' && f.sort);
+      if(on) out.push({t:l.t, cm:l.cm});
+    });
+    return out;
+  }
+
+  renderSql(i){
+    const cur  = this.sqlModel(this.steps[i].f);
+    if(i === 0 && this.spec.keepSelect){ this.$sql.innerHTML = renderLines(cur, new Set()).replace(/class="ln"/g, 'class="ln full"'); return; }
+    const prev = i > 0 ? this.sqlModel(this.steps[i-1].f) : [];
+    const prevKeys = new Set(prev.map(lineKey));
+    const hot = new Set();
+    cur.forEach(l=>{
+      const key = lineKey(l);
+      if(!prevKeys.has(key)) hot.add(key);
+    });
+    this.$sql.innerHTML = renderLines(cur, hot);
+  }
+
+  paint(){
+    const s = this.spec;
+    this.host.innerHTML = `
+      <header>
+        <div class="qnum">Przykład ${s.no}</div>
+        <p class="q">„${s.q}”</p>
+      </header>
+      <pre class="sql"></pre>
+      <div class="steps" role="tablist"></div>
+      <div class="caption"></div>
+      <div class="stage ${s.stack ? '' : 'split'}${s.onlyResult ? ' solo' : ''}${s.resultFirst ? ' rev' : ''}">
+        <div class="pane">
+          <div class="pane-lab">${s.resultFirst ? 'Tabela źródłowa' : 'Tabela'} · ${s.tableLabel} <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="src"></div></div></div>
+        </div>
+        <div class="pane">
+          <div class="pane-lab">Wynik zapytania <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="out"></div></div></div>
+        </div>
+      </div>`;
+    this.$sql   = this.host.querySelector('pre.sql');
+    this.$steps = this.host.querySelector('.steps');
+    this.$cap   = this.host.querySelector('.caption');
+    this.$src   = this.host.querySelector('.src');
+    this.$out   = this.host.querySelector('.out');
+    this.$cntS  = this.host.querySelectorAll('.pane-lab .cnt')[0];
+    this.$cntR  = this.host.querySelectorAll('.pane-lab .cnt')[1];
+    this.$srcWrap = this.host.querySelectorAll('.gridwrap')[0];
+    this.$outWrap = this.host.querySelectorAll('.gridwrap')[1];
+
+    this.steps.forEach((st,i)=>{
+      const b = document.createElement('button');
+      b.innerHTML = `<span class="idx">${i+1}</span>${st.label}`;
+      b.onclick = ()=>this.setStep(i);
+      this.$steps.appendChild(b);
+    });
+
+    this.$src.appendChild(buildHead(this.cols));
+    this.rows.forEach(r=>{
+      const el = document.createElement('div');
+      el.className = 'r';
+      fillRow(el, r, this.cols, true);
+      this.srcNodes.set(r, el);
+      this.$src.appendChild(el);
+    });
+    this.$cntS.textContent = '· ' + plWiersz(this.rows.length);
+  }
+
+  resultCols(f){
+    const s = this.spec;
+    if(!f.project) return this.cols;
+    return s.select.filter(x=>selVisible(x, f)).map(sel=>{
+      const c = colOf(s.table, sel.k);
+      return Object.assign({}, c, {h: (f.alias && sel.alias) ? sel.alias : c.h});
+    });
+  }
+
+  setStep(i){
+    const st = this.steps[i], f = st.f, s = this.spec;
+    [...this.$steps.children].forEach((b,j)=>b.setAttribute('aria-current', j===i?'true':'false'));
+    this.$cap.innerHTML = st.cap || '';
+    this.renderSql(i);
+
+    const preds = (s.baseWhere || []).concat(f.filter ? (s.where || []) : []);
+    const filtering = preds.length > 0;
+    const kept = filtering ? this.rows.filter(r=>passAll(r, preds)) : this.rows.slice();
+    const keptSet = new Set(kept);
+
+    this.rows.forEach(r=>{
+      const el = this.srcNodes.get(r);
+      el.className = 'r';
+      if(filtering){
+        if(keptSet.has(r)){ el.classList.add('in'); setWhy(el, ''); }
+        else { el.classList.add('out'); setWhy(el, failLabel(r, preds), 'no'); }
+      } else {
+        setWhy(el, '');
+      }
+    });
+
+    if(filtering && kept.length) scrollToRow(this.$srcWrap, this.srcNodes.get(kept[0]));
+    else if(this.$srcWrap) this.$srcWrap.scrollTop = 0;
+    if(this.$outWrap) this.$outWrap.scrollTop = 0;
+
+    if(i === 0 && !s.startResult){
+      this.$out.innerHTML = '';
+      const ph = document.createElement('div');
+      ph.className = 'placeholder';
+      ph.textContent = 'Zapytanie jeszcze nie zaczęło działać.';
+      this.$out.appendChild(ph);
+      this.$cntR.textContent = '';
+      return;
+    }
+
+    const cols = this.resultCols(f);
+    let rows = kept.slice();
+    const cmp = f.sort ? s.orderBy : s.baseOrder;
+    if(cmp) rows.sort(cmp);
+    const cutFrom = f.top ? s.top : Infinity;
+
+    if(f.distinct){ this.renderDistinct(cols, rows); return; }
+
+    flip(this.$out, ()=>{
+      this.$out.innerHTML = '';
+      this.$out.appendChild(buildHead(cols, !!(f.alias && f.project)));
+      if(!rows.length){
+        const ph = document.createElement('div');
+        ph.className = 'placeholder';
+        ph.textContent = 'Zero wierszy. Zapytanie nie zwróciło niczego.';
+        this.$out.appendChild(ph);
+        return;
+      }
+      rows.forEach((r,n)=>{
+        let el = this.resNodes.get(r);
+        const fresh = !el;
+        if(fresh){ el = document.createElement('div'); this.resNodes.set(r, el); }
+        el.className = 'res' + ((s.plainResult || !filtering) ? ' plain' : '') + (n >= cutFrom ? ' cut' : '') + (fresh ? ' appear' : '');
+        if(fresh) el.style.animationDelay = (n*55)+'ms';
+        fillRow(el, r, cols, true);
+        if(n >= cutFrom) setWhy(el, 'ucięty przez TOP '+s.top, '');
+        this.$out.appendChild(el);
+      });
+    });
+
+    this.$cntR.textContent = '· ' + plWiersz(Math.min(rows.length, cutFrom));
+  }
+
+  renderDistinct(cols, rows){
+    const s = this.spec, c = colOf(s.table, s.select[0].k);
+    const map = new Map();
+    rows.forEach(r=>{
+      const v = c.v(r);
+      map.set(v, (map.get(v)||0)+1);
+    });
+    this.$out.innerHTML = '';
+    this.$out.appendChild(buildHead(cols));
+    let n = 0;
+    for(const [v, cnt] of map){
+      const el = document.createElement('div');
+      el.className = 'res appear';
+      el.style.animationDelay = (n++*70)+'ms';
+      el.style.gridTemplateColumns = gridTemplate(cols) + ' auto';
+      const sp = document.createElement('span');
+      sp.className = 'cell-key';
+      sp.textContent = v;
+      el.appendChild(sp);
+      const tagCell = document.createElement('span');
+      tagCell.className = 'why';
+      tagCell.innerHTML = '<span class="tag">'+plWiersz(cnt)+' → 1</span>';
+      el.appendChild(tagCell);
+      this.$out.appendChild(el);
+    }
+    this.$cntR.textContent = '· ' + plWiersz(map.size);
+  }
+}
+
+/* ============================================================
+   5b. SILNIK: rekonesans, czyli zwiedzanie kolumn tabeli
+   ============================================================ */
+class Tour{
+  constructor(host, spec){
+    this.host = host; this.spec = spec;
+    this.cols = COLS[spec.table];
+    this.rows = SRC[spec.table];
+    this.nodes = new Map();
+    this.paint();
+    this.setStep(0);
+  }
+
+  paint(){
+    const s = this.spec;
+    this.host.innerHTML = `
+      <header>
+        <div class="qnum">Przykład ${s.no}</div>
+        <p class="q">„${s.q}”</p>
+      </header>
+      <pre class="sql plain">${highlight(s.sql)}</pre>
+      <div class="steps" role="tablist"></div>
+      <div class="caption"></div>
+      <div class="stage">
+        <div class="pane">
+          <div class="pane-lab">Tabela · ${s.tableLabel} <span class="cnt"></span></div>
+          <div class="gridwrap${s.scroll ? ' tall' : ''}"><div class="grid"><div class="src"></div></div></div>
+        </div>
+      </div>`;
+    this.$steps = this.host.querySelector('.steps');
+    this.$cap   = this.host.querySelector('.caption');
+    this.$src   = this.host.querySelector('.src');
+    this.host.querySelector('.pane-lab .cnt').textContent = '· ' + plWiersz(this.rows.length);
+
+    s.steps.forEach((st,i)=>{
+      const b = document.createElement('button');
+      b.innerHTML = `<span class="idx">${i+1}</span>${st.label}`;
+      b.onclick = ()=>this.setStep(i);
+      this.$steps.appendChild(b);
+    });
+
+    this.$head = buildHead(this.cols);
+    this.$src.appendChild(this.$head);
+    this.rows.forEach(r=>{
+      const el = document.createElement('div');
+      el.className = 'r';
+      fillRow(el, r, this.cols, false);
+      this.nodes.set(r, el);
+      this.$src.appendChild(el);
+    });
+  }
+
+  setStep(i){
+    const st = this.spec.steps[i];
+    [...this.$steps.children].forEach((b,j)=>b.setAttribute('aria-current', j===i?'true':'false'));
+    this.$cap.innerHTML = st.cap || '';
+    const hi = new Set(st.cols || []);
+    [...this.$head.children].forEach((sp,n)=>{
+      sp.classList.toggle('colhi', hi.has(this.cols[n].k));
+    });
+    this.rows.forEach(r=>{
+      const el = this.nodes.get(r);
+      el.className = 'r' + (st.rows && st.rows(r) ? (st.tone === 'ok' ? ' hi-ok' : ' hi') : '');
+      [...el.children].forEach((sp,n)=>{
+        sp.classList.toggle('colhi', hi.has(this.cols[n].k));
+      });
+    });
+  }
+}
+
+/* ============================================================
+   6. SILNIK: porównanie wariantów tego samego zapytania
+   ============================================================ */
+class Variants{
+  constructor(host, spec){
+    this.host = host; this.spec = spec;
+    this.cols = COLS[spec.table];
+    this.rows = SRC[spec.table];
+    this.srcNodes = new Map();
+    this.resNodes = new Map();
+    this.paint();
+    this.setVar(0);
+  }
+
+  paint(){
+    const s = this.spec;
+    this.host.innerHTML = `
+      <header>
+        <div class="qnum">Przykład ${s.no}</div>
+        <p class="q">„${s.q}”</p>
+      </header>
+      <div class="steps vars" role="tablist"></div>
+      <pre class="sql cmp"></pre>
+      <div class="caption"></div>
+      <div class="stage ${s.stack ? '' : 'split'}">
+        <div class="pane">
+          <div class="pane-lab">Tabela · ${s.tableLabel} <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="src"></div></div></div>
+        </div>
+        <div class="pane">
+          <div class="pane-lab">Wynik zapytania <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="out"></div></div></div>
+        </div>
+      </div>`;
+    this.$steps = this.host.querySelector('.steps');
+    this.$sql   = this.host.querySelector('pre.sql');
+    this.$cap   = this.host.querySelector('.caption');
+    this.$src   = this.host.querySelector('.src');
+    this.$out   = this.host.querySelector('.out');
+    this.$cntS  = this.host.querySelectorAll('.pane-lab .cnt')[0];
+    this.$cntR  = this.host.querySelectorAll('.pane-lab .cnt')[1];
+    this.$srcWrap = this.host.querySelectorAll('.gridwrap')[0];
+    this.$outWrap = this.host.querySelectorAll('.gridwrap')[1];
+
+    s.variants.forEach((v,i)=>{
+      const b = document.createElement('button');
+      b.innerHTML = `<span class="idx">${String.fromCharCode(65+i)}</span>${v.label}`;
+      b.onclick = ()=>this.setVar(i);
+      this.$steps.appendChild(b);
+    });
+
+    this.$src.appendChild(buildHead(this.cols));
+    this.rows.forEach(r=>{
+      const el = document.createElement('div');
+      el.className = 'r';
+      fillRow(el, r, this.cols, true);
+      this.srcNodes.set(r, el);
+      this.$src.appendChild(el);
+    });
+    this.$cntS.textContent = '· ' + plWiersz(this.rows.length);
+  }
+
+  setVar(i){
+    const s = this.spec, v = s.variants[i];
+    [...this.$steps.children].forEach((b,j)=>b.setAttribute('aria-current', j===i?'true':'false'));
+    this.$sql.innerHTML = renderLines(v.sql, null);
+    this.$cap.innerHTML = v.cap || '';
+
+    const preds = v.where || [{label:'', fn:()=>true}];
+    const kept = this.rows.filter(r=>passAll(r, preds));
+    const keptSet = new Set(kept);
+
+    this.rows.forEach(r=>{
+      const el = this.srcNodes.get(r);
+      el.className = 'r';
+      if(keptSet.has(r)){
+        const bad = v.bad && v.bad(r);
+        el.classList.add(bad ? 'bad' : 'in');
+        setWhy(el, bad ? (v.badLabel || '') : '', 'alert');
+      } else {
+        el.classList.add('out');
+        setWhy(el, failLabel(r, preds), 'no');
+      }
+    });
+
+    if(kept.length) scrollToRow(this.$srcWrap, this.srcNodes.get(kept[0]));
+    if(this.$outWrap) this.$outWrap.scrollTop = 0;
+
+    const cols = s.select.map(sel=>{
+      const c = colOf(s.table, sel.k);
+      return Object.assign({}, c, {h: sel.alias || c.h});
+    });
+    let rows = kept.slice();
+    if(v.orderBy) rows.sort(v.orderBy);
+
+    flip(this.$out, ()=>{
+      this.$out.innerHTML = '';
+      this.$out.appendChild(buildHead(cols, true));
+      if(!rows.length){
+        const ph = document.createElement('div');
+        ph.className = 'placeholder';
+        ph.textContent = 'Zero wierszy. Zapytanie nie zwróciło niczego.';
+        this.$out.appendChild(ph);
+        return;
+      }
+      rows.forEach((r,n)=>{
+        let el = this.resNodes.get(r);
+        const fresh = !el;
+        if(fresh){ el = document.createElement('div'); this.resNodes.set(r, el); }
+        const bad = v.bad && v.bad(r);
+        el.className = 'res' + (bad ? ' bad' : '') + (fresh ? ' appear' : '');
+        if(fresh) el.style.animationDelay = (n*45)+'ms';
+        fillRow(el, r, cols, true);
+        setWhy(el, bad ? (v.badLabel || '') : '', 'alert');
+        this.$out.appendChild(el);
+      });
+    });
+
+    this.$cntR.textContent = '· ' + plWiersz(rows.length);
+  }
+}
+</script>
+<script>
+/* ============================================================
+   7. SPECYFIKACJE PRZYKŁADÓW
+   ============================================================ */
+const byName = (a,b)=>a.name.localeCompare(b.name,'pl');
+
+const SPECS = {
+
+/* ---------- CASE 1 ---------- */
+
+d3:{
+  no:'3 i 4', table:'products', tableLabel:'Products', stack:true,
+  q:'Zaczynam od tego, o co poproszono wprost',
+  body:[{t:'FROM Products', phase:'from'}],
+  select:[{k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}],
+  aliasStep:true, startResult:true, onlyResult:true, plainResult:true,
+  capRaw:'Gwiazdka zwraca kopię całej tabeli: siedem kolumn i pięćdziesiąt cztery wiersze. Zlecenie dotyczyło dwóch rzeczy, nazwy i ceny, więc ten wynik jest o pięć kolumn za szeroki.',
+    capSelect:'<b>SELECT</b> wybiera kolumny. Znika <code>SupplierID</code>, ponieważ klienta nie interesuje, od kogo kupujemy towar, oraz <code>UnitsInStock</code>, ponieważ stan magazynowy jest informacją wewnętrzną. Liczba wierszy pozostaje bez zmian: <code>SELECT</code> decyduje o tym, które kolumny znajdą się w wyniku, a o tym, które wiersze do niego wejdą, decyduje dopiero <code>WHERE</code>.',
+  capAlias:'<b>AS</b> zmienia nagłówek w wyniku, a nie w bazie. Plik trafia do Excela, na slajd albo bezpośrednio do klienta, więc nagłówki muszą być zrozumiałe dla odbiorcy, nie dla programisty. Nagłówek <code>UnitPrice</code> w cenniku wysłanym restauracji świadczy o tym, że nikt tego pliku przed wysyłką nie otworzył.'
+},
+
+d5:{
+  no:5, table:'products', tableLabel:'Products', stack:true,
+  q:'Interesuje nas kategoria Żywność i Napoje',
+  body:[
+    {t:'FROM Products', phase:'from'},
+    {t:'WHERE CategoryID = 8', phase:'where'}
+  ],
+  where:[{label:'CategoryID inne niż 8', fn:r=>r.cat===8}],
+  select:[{k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}],
+  keepSelect:true, startResult:true, resultFirst:true,
+  capRaw:'Zapytanie kończące poprzedni przykład: dwie kolumny, polskie nagłówki i wszystkie pięćdziesiąt cztery produkty z katalogu. Zlecenie dotyczy jednak wyłącznie asortymentu spożywczego.',  
+  capWhere:'<b>WHERE</b> sprawdza warunek osobno dla każdego wiersza i przepuszcza wyłącznie te, dla których jest on prawdziwy. Czterdzieści dziewięć wierszy nie wchodzi do wyniku, zostaje pięć. Dwie pozycje z tej piątki, Kawa ziarnista i Miód naturalny, nie powinny jednak trafić do cennika, ponieważ są wycofane ze sprzedaży. Zapytanie zrobiło dokładnie to, o co je poproszono, i właśnie dlatego jego wynik jest błędny.',
+  capSelect:'W wyniku znalazły się Kawa ziarnista oraz Miód naturalny, oba z wartością <code>Discontinued</code> równą 1. Zapytanie wykonało dokładnie to, o co je poproszono, i właśnie dlatego jego wynik jest błędny.'
+},
+
+d6:{
+  no:6, table:'products', tableLabel:'Products', stack:true,
+  q:'…i bez pozycji wycofanych',
+  body:[
+    {t:'FROM Products', phase:'from'},
+    {t:'WHERE CategoryID = 8', cm:'8 = Żywność i Napoje', phase:'from'},
+    {t:'  AND Discontinued = 0', cm:'0 = nadal w sprzedaży', phase:'where'}
+  ],
+  baseWhere:[{label:'CategoryID inne niż 8', fn:r=>r.cat===8}],
+  where:[{label:'Discontinued = 1', fn:r=>r.disc===0}],
+  select:[{k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}],
+  keepSelect:true, startResult:true, resultFirst:true,
+  capRaw:'Wynik z poprzedniego przykładu: pięć produktów spożywczych, w tym dwa, których nie ma już w sprzedaży.',
+  capWhere:'<b>AND</b> wymaga, aby oba warunki były spełnione jednocześnie. Kawa ziarnista i Miód naturalny wypadają dopiero na drugim z nich, co widać po etykiecie przy wygaszonym wierszu. Poprawna odpowiedź zawiera o jeden warunek więcej, niż brzmiała prośba. Zamawiający nie zna schematu bazy, więc jego zlecenia rzadko bywają kompletne, a rozpoznanie tego, o co ktoś zapomniał poprosić, jest tą częścią pracy analityka, której nie zastąpi samo wygenerowanie zapytania.',   
+  capSelect:'Poprawna odpowiedź zawiera o jeden warunek więcej, niż brzmiała prośba. Zamawiający nie zna schematu bazy, więc jego zlecenia rzadko bywają kompletne. Rozpoznanie tego, o co ktoś zapomniał poprosić, jest tą częścią pracy analityka, której nie zastąpi samo wygenerowanie zapytania.'
+},
+
+d7:{
+  no:7, table:'products', tableLabel:'Products', stack:true,
+  q:'Alfabetycznie, żeby dało się coś znaleźć',
+  body:[
+    {t:'FROM Products', phase:'from'},
+    {t:'WHERE CategoryID = 8', cm:'8 = Żywność i Napoje', phase:'from'},
+    {t:'  AND Discontinued = 0', cm:'0 = nadal w sprzedaży', phase:'from'},
+    {t:'ORDER BY ProductName', phase:'order'}
+  ],
+  baseWhere:[
+    {label:'CategoryID inne niż 8', fn:r=>r.cat===8},
+    {label:'Discontinued = 1', fn:r=>r.disc===0}
+  ],
+  orderBy:byName,
+  select:[{k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}],
+  keepSelect:true, startResult:true, resultFirst:true,
+  capRaw:'Zapytanie z poprzedniego przykładu: trzy produkty spożywcze, które nadal są w sprzedaży. W wyniku stoją w kolejności <code>ProductID</code>, ponieważ w takiej leżą w tabeli. Zostało ostatnie zdanie zlecenia.',
+  capOrder:'<b>ORDER BY</b> ustawia kolejność wyniku, a tabela źródłowa pozostaje nietknięta. Kolejność wierszy w bazie nie jest własnością danych i bez <code>ORDER BY</code> nie wolno na niej polegać, nawet jeżeli kilka razy z rzędu wygląda poprawnie. Cennik jest gotowy: trzy pozycje, dwie kolumny, polskie nagłówki, porządek alfabetyczny.'
+},
+
+d10:{
+  no:10, table:'products', tableLabel:'Products', stack:true,
+  q:'Na czym handlowcy mogą dać rabat?',
+  body:[
+    {t:'FROM Products', phase:'from'},
+    {t:'WHERE (CategoryID = 8 OR CategoryID = 3)', phase:'from'},
+    {t:'  AND Discontinued = 0', phase:'from'},
+    {t:'  AND UnitsInStock >= 200', cm:'zalega na magazynie', phase:'where'},
+    {t:'  AND UnitPrice BETWEEN 20 AND 100', cm:'średnia półka cenowa', phase:'where'},
+    {t:'ORDER BY CategoryID, ProductName', phase:'from', until:'order'},
+    {t:'ORDER BY UnitsInStock DESC', phase:'order'}
+  ],
+  baseWhere:[
+    {label:'inna kategoria', fn:r=>r.cat===8||r.cat===3},
+    {label:'Discontinued = 1', fn:r=>r.disc===0}
+  ],
+  where:[
+    {label:'UnitsInStock < 200', fn:r=>r.stock>=200},
+    {label:'cena poza 20 i 100', fn:r=>r.price>=20 && r.price<=100}
+  ],
+  baseOrder:(a,b)=> a.cat-b.cat || byName(a,b),
+  orderBy:(a,b)=>b.stock-a.stock,
+  top:5,
+  select:[{k:'cat', alias:'Kategoria'}, {k:'name', alias:'Produkt'}, {k:'stock', alias:'NaStanie', at:'where'}, {k:'price', alias:'Cena'}],
+  keepSelect:true, startResult:true, resultFirst:true,
+  capRaw:'Punkt wyjścia to gotowy cennik z przykładu 8: dziewięć pozycji z dwóch kategorii, wszystkie w sprzedaży, uporządkowane działami. Z tej listy handlowcy potrzebują wąskiego wyboru.',
+  capWhere:'Dwa zdania maila zamieniają się w dwa warunki. Do wyniku dochodzi też kolumna <code>UnitsInStock</code>, bo skoro filtrujemy po stanie magazynowym, handlowiec musi go widzieć. Etykiety przy wygaszonych wierszach wskazują pierwszy warunek, którego wiersz nie spełnił. Czekolada gorzka ma 460 sztuk na stanie, najwięcej wśród produktów spożywczych, a mimo to nie wchodzi do wyniku, ponieważ przy cenie 12,90 zł nie ma czego obniżać. Zapis <code>BETWEEN 20 AND 100</code> jest skrótem od <code>UnitPrice >= 20 AND UnitPrice &lt;= 100</code> i obejmuje obie wartości graniczne.',
+  capOrder:'Nowe <code>ORDER BY</code> zastępuje poprzednie: nie porządkujemy już katalogu działami, tylko szukamy tego, czego zalega najwięcej. <b>DESC</b> odwraca porządek na malejący. Bez <code>DESC</code> otrzymalibyśmy listę odwrotną, czyli pozycje, których zostało najmniej.',
+  capTop:'<b>TOP 5</b> ucina szósty wiersz. Poduszka dekoracyjna (240 sztuk) ustępuje Oliwie z oliwek (245 sztuk). Bez <code>ORDER BY</code> sformułowanie „pięć pierwszych” nie miałoby treści, ponieważ serwer nie ma obowiązku zwracać wierszy w powtarzalnej kolejności. <code>UnitsInStock</code> zostaje w wyniku, choć w cenniku dla klienta pokazywać go nie było wolno: ta lista jest materiałem wewnętrznym.'
+},
+
+/* ---------- CASE 2 ---------- */
+
+d11:{
+  no:11, table:'orders', tableLabel:'Orders',
+  q:'Jakie statusy w ogóle występują w naszych zamówieniach?',
+  body:[{t:'FROM Orders', phase:'from'}],
+  select:[{k:'status'}],
+  distinct:true,
+  capRaw:'Pierwsze pytanie przed każdym raportem sprzedaży brzmi: jakie wartości w ogóle występują w tej kolumnie. Nikt w firmie nie zna listy statusów z pamięci, a dokumentacja systemu zwykle nie nadąża za stanem faktycznym bazy.',
+  capSelect:'Sama kolumna <code>OrderStatus</code> we wszystkich wierszach: trzysta siedemdziesiąt siedem razy jedno z kilku powtarzających się słów. Przewijanie takiej listy niczego nie porządkuje.',
+  capDistinct:'<b>DISTINCT</b> pozostawia każdą wartość jeden raz. Cztery statusy, z czego tylko jeden oznacza pieniądze, które faktycznie wpłynęły.'
+},
+
+d12:{
+  no:12, table:'orders', tableLabel:'Orders',
+  q:'Pokaż zamówienia z listopada',
+  body:[
+    {t:'FROM Orders', phase:'from'},
+    {t:"WHERE OrderDate >= '2024-11-01'", phase:'where'},
+    {t:"  AND OrderDate <  '2024-12-01'", phase:'where'},
+    {t:'ORDER BY OrderDate', phase:'order'}
+  ],
+  where:[
+    {label:'jeszcze październik', fn:r=>r.date >= '2024-11-01'},
+    {label:'już grudzień', fn:r=>r.date < '2024-12-01'}
+  ],
+  orderBy:(a,b)=>a.date.localeCompare(b.date),
+  select:[{k:'id'}, {k:'cust'}, {k:'date'}, {k:'status'}],
+  capRaw:'Bez <code>ORDER BY</code> serwer nie gwarantuje żadnej kolejności wyniku. Daty są tu rozrzucone po całym okresie, a zamknięcie miesiąca wymaga listy uporządkowanej, więc kolejność trzeba narzucić samodzielnie.',
+  capWhere:'Daty porównuje się tak samo jak liczby, a dwa warunki wyznaczają przedział. Z trzystu siedemdziesięciu siedmiu zamówień w listopadzie mieści się szesnaście. Warto sprawdzić oba końce przedziału: zamówienie z 31 października nie wchodzi, zamówienie z 1 listopada owszem.',
+  capSelect:'<code>ShipCity</code> wypada, ponieważ adres wysyłki nie ma związku z zamknięciem miesiąca. Zostają numer zamówienia, klient, data i status, czyli to, czego księgowość potrzebuje do zamknięcia okresu. Kolejność wierszy jest na razie taka, jak w tabeli źródłowej.',
+  capOrder:'Sortowanie działa na gotowym już wyniku, dlatego jest ostatnim krokiem. Przy zamknięciu miesiąca chronologia jest naturalnym porządkiem, ponieważ księgowość czyta taką listę od początku okresu. Zapytanie zwraca szesnaście zamówień z listopada 2024 roku.'
+},
+
+d13:{
+  no:13, table:'orders', tableLabel:'Orders',
+  q:'Które zamówienia z listopada pozostają otwarte?',
+  body:[
+    {t:'FROM Orders', phase:'from'},
+    {t:"WHERE OrderDate >= '2024-11-01'", phase:'from'},
+    {t:"  AND OrderDate <  '2024-12-01'", phase:'from'},
+    {t:"  AND OrderStatus IN ('Completed', 'Pending')", phase:'where'},
+    {t:'ORDER BY OrderDate', phase:'from', until:'order'},
+    {t:'ORDER BY OrderStatus, OrderDate', phase:'order'}
+  ],
+  baseWhere:[
+    {label:'jeszcze październik', fn:r=>r.date >= '2024-11-01'},
+    {label:'już grudzień', fn:r=>r.date < '2024-12-01'}
+  ],
+  where:[
+    {label:'status spoza listy', fn:r=>r.status==='Completed'||r.status==='Pending'}
+  ],
+  baseOrder:(a,b)=> a.date.localeCompare(b.date),
+  orderBy:(a,b)=> a.status===b.status ? a.date.localeCompare(b.date) : a.status.localeCompare(b.status),
+  select:[{k:'id'}, {k:'cust'}, {k:'date'}, {k:'status'}],
+  keepSelect:true, startResult:true,
+  capRaw:'Zapytanie z poprzedniego przykładu: szesnaście zamówień z listopada, ułożonych chronologicznie. Księgowość potrzebuje z tej listy wyłącznie tych pozycji, które wciąż liczą się do sprzedaży.',
+  capWhere:'<b>IN</b> zastępuje łańcuch warunków <code>OR</code> na tej samej kolumnie, czyli zapis <code>OrderStatus = \'Completed\' OR OrderStatus = \'Pending\'</code>. Zamówienia anulowane i zwrócone zostają pominięte: z szesnastu listopadowych pozycji odchodzi jedna anulowana, więc zostaje piętnaście. Ten sam wynik dałby zapis odwrotny, <code>NOT IN (\'Cancelled\', \'Refunded\')</code>, ale tylko dopóki w systemie nie pojawi się piąty status.',
+  capOrder:'Nowe sortowanie zastępuje chronologiczne. Po dwóch kolumnach oznacza: najpierw status w porządku alfabetycznym (Completed przed Pending), a w ramach statusu chronologicznie. Kolejność kolumn w <code>ORDER BY</code> decyduje o kształcie listy, bo po zamianie miejscami zamówienia Pending rozproszyłyby się między zamówieniami Completed. Księgowość otrzymuje to, o co prosiła: pozycje zamknięte i czekające, rozdzielone, przy czym te czekające stoją razem, od najstarszej, czyli od tej, która wymaga decyzji w pierwszej kolejności.'
+}
+
+};
+
+const TOURSPECS = {
+
+t1:{
+  no:1, table:'products', tableLabel:'Products', scroll:true,
+  q:'Czy mam z czego zrobić ten cennik?',
+  sql:'SELECT * FROM Products;',
+  steps:[
+    {label:'cała tabela', cols:[],
+     cap:'Rekonesans prowadzi się pod konkretne pytanie. Potrzebujemy stworzyć cennik produktów, więc sprawdźmy kolumny w tabeli Products.'},
+    {label:'to, o co poproszono', cols:['name','price'],
+     cap:'<code>ProductName</code> i <code>UnitPrice</code>, czyli nazwa i cena. Dokładnie te dwie kolumny mają trafić do cennika i tylko o nich mówił mail.'},
+    {label:'czym będziemy filtrować', cols:['cat'],
+          cap:'<code>CategoryID</code> posłuży jako filtr, ponieważ zlecenie dotyczy asortymentu spożywczego. Sam numer nic nam jednak nie mówi. W tej tabeli nie ma informacji, co oznacza dana kategoria.'},
+    {label:'czego zlecenie nie przewidziało', cols:['disc'], rows:r=>r.disc===1,
+     cap:'<code>Discontinued</code> to kolumna, o której w mailu nie było ani słowa. Cztery produkty w tej tabeli są wycofane z oferty, a wśród nich Kawa ziarnista i Miód naturalny, czyli pozycje spożywcze, które za chwilę będą kandydatami do cennika. Gdyby tam trafiły, klient mógłby zamówić coś, czego nie ma już w sprzedaży. Dział handlowy nie wiedział o istnieniu tej kolumny, ponieważ nie zna schematu bazy. My ją widzimy, więc to my musimy ją uwzględnić i o niej powiedzieć. To jest właściwy powód, dla którego w ogóle robi się rekonesans.'}
+  ]
+},
+
+t2:{
+  no:2, table:'categories', tableLabel:'Categories',
+  q:'Cennik dla gastronomii, czyli które kategorie?',
+  sql:'SELECT * FROM Categories;',
+  steps:[
+    {label:'tabela słownikowa', cols:[],
+     cap:'Tabela słownikowa: niewielka, rzadko zmieniana, nadaje znaczenie identyfikatorom rozsianym po innych tabelach. Products przechowuje w swojej kolumnie samo <code>CategoryID</code>, a tłumaczenie liczby na nazwę zaczyna się właśnie tutaj. W Bloku 3 zamiast zaglądać do dwóch tabel po kolei, połączymy je zapytaniem.'},
+    {label:'czego szukamy', cols:['id','name'], rows:r=>r.id===8, tone:'ok',
+     cap:'Mail mówił o restauracjach, hotelach i sklepach spożywczych, czemu w naszym katalogu odpowiada kategoria Żywność i Napoje. Dopiero teraz wiemy, że w filtrze trzeba będzie napisać <code>CategoryID = 8</code>.'}
+  ]
+}
+
+};
+
+const VARSPECS = {
+
+v8:{
+  no:8, table:'products', tableLabel:'Products', stack:true,
+  q:'Gastronomia kupuje też z kategorii Dom i Ogród',
+  select:[{k:'cat', alias:'Kategoria'}, {k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}, {k:'disc', alias:'Discontinued'}],
+  variants:[
+    {
+      label:'bez nawiasów',
+      sql:[
+        {t:'SELECT'},
+        {t:'    CategoryID  AS Kategoria,'},
+        {t:'    ProductName AS Produkt,'},
+        {t:'    UnitPrice   AS Cena'},
+        {t:'FROM Products'},
+        {t:'WHERE CategoryID = 8 OR CategoryID = 3'},
+        {t:'  AND Discontinued = 0'},
+        {t:'ORDER BY CategoryID, ProductName'},
+        {t:''},
+        {t:'-- serwer czyta ten warunek tak:'},
+        {t:'--   CategoryID = 8 OR «(»CategoryID = 3 AND Discontinued = 0«)»'}      ],
+      where:[{label:'poza kategoriami 3 i 8', fn:r=> r.cat===8 || (r.cat===3 && r.disc===0)}],
+      bad:r=>r.disc===1,
+      badLabel:'wycofany, a jest w cenniku',
+      orderBy:(a,b)=> a.cat-b.cat || byName(a,b),
+      cap:'<code>AND</code> wiąże mocniej niż <code>OR</code>, więc serwer odczytuje ten warunek jako <code>CategoryID = 8 OR (CategoryID = 3 AND Discontinued = 0)</code>. Do wyniku wchodzą wszystkie produkty spożywcze, także wycofane, oraz niewycofane produkty z kategorii Dom i Ogród. Filtr <code>Discontinued</code> zadziałał tylko na jedną z dwóch kategorii. Zapytanie wykonało się bez błędu i zwróciło jedenaście wierszy, w tym Kawę i Miód, których nie ma już w sprzedaży.'
+    },
+    {
+      label:'z nawiasami',
+      sql:[
+        {t:'SELECT'},
+        {t:'    CategoryID  AS Kategoria,'},
+        {t:'    ProductName AS Produkt,'},
+        {t:'    UnitPrice   AS Cena'},
+        {t:'FROM Products'},
+        {t:'WHERE «(»CategoryID = 8 OR CategoryID = 3«)»'},
+        {t:'  AND Discontinued = 0'},
+        {t:'ORDER BY CategoryID, ProductName'}
+      ],
+      where:[
+        {label:'poza kategoriami 3 i 8', fn:r=>r.cat===8||r.cat===3},
+        {label:'Discontinued = 1', fn:r=>r.disc===0}
+      ],
+      orderBy:(a,b)=> a.cat-b.cat || byName(a,b),
+      cap:'Nawiasy domykają alternatywę, dzięki czemu warunek <code>AND Discontinued = 0</code> odnosi się do całego wyrażenia w nawiasie. Dziewięć pozycji, żadnej wycofanej. Różnica w zapisie wynosi dwa znaki, a różnica w wyniku to dwa wycofane produkty w cenniku wysłanym klientom.'
+    }
+  ]
+},
+
+v8b:{
+  no:'8, ciąg dalszy', table:'products', tableLabel:'Products', stack:true,
+  q:'Kolejność kolumn w ORDER BY',
+  select:[{k:'cat', alias:'Kategoria'}, {k:'name', alias:'Produkt'}, {k:'price', alias:'Cena'}],
+  variants:[
+    {
+      label:'CategoryID, ProductName',
+      sql:[
+        {t:'SELECT CategoryID AS Kategoria, ProductName AS Produkt, UnitPrice AS Cena'},
+        {t:'FROM Products'},
+        {t:'WHERE (CategoryID = 8 OR CategoryID = 3)'},
+        {t:'  AND Discontinued = 0'},
+        {t:'ORDER BY «CategoryID, ProductName»'}
+      ],
+      where:[
+        {label:'poza kategoriami 3 i 8', fn:r=>r.cat===8||r.cat===3},
+        {label:'Discontinued = 1', fn:r=>r.disc===0}
+      ],
+      orderBy:(a,b)=> a.cat-b.cat || byName(a,b),
+      cap:'Najpierw kategoria, a w ramach kategorii porządek alfabetyczny. Wynik dzieli się na dwa bloki: komplet kategorii Dom i Ogród, a po nim komplet kategorii Żywność i Napoje. Taki cennik czyta się działami.'
+    },
+    {
+      label:'ProductName, CategoryID',
+      sql:[
+        {t:'SELECT CategoryID AS Kategoria, ProductName AS Produkt, UnitPrice AS Cena'},
+        {t:'FROM Products'},
+        {t:'WHERE (CategoryID = 8 OR CategoryID = 3)'},
+        {t:'  AND Discontinued = 0'},
+        {t:'ORDER BY «ProductName, CategoryID»'}
+      ],
+      where:[
+        {label:'poza kategoriami 3 i 8', fn:r=>r.cat===8||r.cat===3},
+        {label:'Discontinued = 1', fn:r=>r.disc===0}
+      ],
+      orderBy:(a,b)=> byName(a,b) || a.cat-b.cat,
+      cap:'Ten sam zbiór wierszy i inna kolejność kolumn w <code>ORDER BY</code> daje jedną listę alfabetyczną z przemieszanymi kategoriami. Drugie kryterium nie ma tu żadnego wpływu, ponieważ nazwy produktów się nie powtarzają. Kryterium drugie rozstrzyga wyłącznie wtedy, gdy pierwsze daje wynik równy.'
+    }
+  ]
+},
+
+v9:{
+  no:9, table:'customers', tableLabel:'Customers', stack:true,
+  q:'Wysyłamy cennik mailem. Potrzebuję listy adresów.',
+  select:[{k:'id'}, {k:'comp', alias:'CompanyName'}, {k:'cont', alias:'ContactName'}, {k:'mail', alias:'Email'}],
+  variants:[
+    {
+      label:'Email = NULL',
+      sql:[
+        {t:'SELECT CustomerID, CompanyName, ContactName, Email'},
+        {t:'FROM Customers'},
+        {t:'WHERE Email «= NULL»'}
+      ],
+      where:[{label:'NULL nie równa się niczemu', fn:()=>false}],
+      cap:'Zero wierszy i żaden komunikat o błędzie. <code>NULL</code> nie jest wartością, lecz informacją o jej braku. Porównanie <code>= NULL</code> nie daje ani prawdy, ani fałszu, tylko wynik nieznany, a <code>WHERE</code> przepuszcza wyłącznie prawdę. Wynik jest pusty, mimo że siedmiu klientów w tabeli rzeczywiście nie ma adresu.'
+    },
+    {
+      label:'Email <> NULL',
+      sql:[
+        {t:'SELECT CustomerID, CompanyName, ContactName, Email'},
+        {t:'FROM Customers'},
+        {t:'WHERE Email «<> NULL»'}
+      ],
+      where:[{label:'NULL nie różni się od niczego', fn:()=>false}],
+      cap:'Ponownie zero wierszy. To najbardziej mylący przypadek: skoro porównanie <code>= NULL</code> nie zwróciło niczego, intuicja podpowiada, że warunek odwrotny zwróci wszystko. Tak się nie stanie, ponieważ obie strony porównania z <code>NULL</code> kończą się wynikiem nieznanym.'
+    },
+    {
+      label:'Email IS NOT NULL',
+      sql:[
+        {t:'SELECT CustomerID, CompanyName, ContactName, Email'},
+        {t:'FROM Customers'},
+        {t:'WHERE Email «IS NOT NULL»'}
+      ],
+      where:[{label:'Email jest pusty', fn:r=>r.mail!==null}],
+      cap:'Właściwa składnia. <code>IS NULL</code> oraz <code>IS NOT NULL</code> nie porównują wartości, tylko pytają o sam fakt jej obecności. Sześćdziesięciu pięciu klientów z adresem, siedmiu bez adresu. Puste pola w tabeli Customers są w tej bazie celowe, ponieważ tak wyglądają rzeczywiste systemy CRM, i wrócimy do nich na Sesji 3 przy czyszczeniu danych. Bez numeru telefonu jest ich w tej tabeli aż 21.'
+    }
+  ]
+}
+
+};
+
+document.querySelectorAll('[data-tour]').forEach(el=>{ new Tour(el, TOURSPECS[el.dataset.tour]); });
+document.querySelectorAll('[data-demo]').forEach(el=>{ new Demo(el, SPECS[el.dataset.demo]); });
+document.querySelectorAll('[data-vars]').forEach(el=>{ new Variants(el, VARSPECS[el.dataset.vars]); });
+</script>
+</body>
+</html>
