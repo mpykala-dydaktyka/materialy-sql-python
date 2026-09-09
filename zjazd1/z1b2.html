@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zjazd 1 · Blok 2 — agregaty, GROUP BY, HAVING (wizualnie)</title>
+<style>
+:root{
+  --ink:#16202b;
+  --ink-2:#4a5b6d;
+  --ink-3:#7d8b99;
+  --paper:#f4f6f8;
+  --panel:#ffffff;
+  --line:#dfe5ec;
+  --line-2:#c8d2dc;
+  --accent:#1c3f6e;
+  --accent-soft:#e7eef7;
+
+  --ok:#0f7a72;   --okb:#ddf1ee;
+  --bad:#a83f5b;  --badb:#fbe6ec;
+  --warm:#b26a00; --warmb:#fdf0da;
+
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
+
+.masthead{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:28px}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 20px
+}
+.kicker{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+  margin:0 0 6px
+}
+h1{
+  font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.4vw,32px);
+  letter-spacing:-.01em;margin:0 0 6px;line-height:1.25
+}
+.sub{color:var(--ink-2);margin:0;font-size:15px}
+
+h2{
+  font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.02em;
+  margin:46px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line-2)
+}
+h3{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;
+   text-transform:uppercase;color:var(--ink-2);margin:30px 0 10px}
+p{margin:0 0 14px}
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:14px 16px;margin:0 0 22px;font-size:14.5px
+}
+.note strong{display:block;margin-bottom:4px}
+.warn{border-left-color:var(--bad);background:var(--badb)}
+kbd,code{font-family:var(--mono);font-size:.92em;background:#eef2f6;padding:1px 5px;border-radius:3px}
+
+.brief{
+  background:#fffdf7;border:1px solid #e9dcc2;border-left:3px solid var(--warm);
+  padding:15px 18px;margin:0 0 24px
+}
+.brief .from{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:#9a7233;margin-bottom:7px
+}
+.brief q{font-style:italic;font-size:15px;display:block;quotes:"\201E" "\201D"}
+.brief .after{margin:10px 0 0;font-size:14px;color:var(--ink-2)}
+
+.demo{
+  background:var(--panel);border:1px solid var(--line);
+  margin:0 0 26px;overflow:hidden
+}
+.demo>header{padding:16px 18px 0}
+.qnum{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3)
+}
+.q{font-size:17px;font-weight:600;margin:2px 0 12px;letter-spacing:-.01em}
+
+/* ---------- SQL, który rośnie ---------- */
+pre.sql{
+  font-family:var(--mono);font-size:13.5px;line-height:1.7;
+  background:#101a24;color:#d6e2ee;margin:0;padding:14px 12px;
+  overflow-x:auto;white-space:pre
+}
+pre.sql .ln{
+  display:block;padding:0 8px;
+  opacity:.42;transition:opacity .3s ease
+}
+/* wskaźnik w marginesie zamiast tła: tło całej linii wyglądałoby
+   jak zaznaczenie fragmentu kodu do uruchomienia w SSMS */
+pre.sql .ln::before{
+  content:'\00a0';display:inline-block;width:1.5em;color:#f0b45c;font-weight:600
+}
+pre.sql .ln.hot{opacity:1}
+pre.sql .ln.full{opacity:1}
+pre.sql .ln.hot::before{content:'\25B8'}
+pre.sql.cmp .ln{opacity:.62}
+pre.sql .k{color:#7fb7e8;font-weight:600}
+pre.sql .f{color:#f0b45c;font-weight:600}
+pre.sql .s{color:#9fd8a6}
+pre.sql .n{color:#e5a3c4}
+pre.sql .c{color:#647c93;font-style:italic}
+pre.sql.plain{padding:14px 18px}
+pre.sql .ln.hot::before{content:'\25B8'}
+pre.sql .dm{background:rgba(240,180,92,.22);color:#f5c274;font-weight:700;border-radius:2px;padding:0 2px}
+
+.steps{
+  display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);
+  background:#f9fafc
+}
+.steps button{
+  font-family:var(--mono);font-size:12px;letter-spacing:.04em;
+  background:none;border:0;border-right:1px solid var(--line);
+  padding:11px 14px;cursor:pointer;color:var(--ink-2);
+  border-bottom:2px solid transparent
+}
+.steps button:hover{background:#eef2f7;color:var(--ink)}
+.steps button[aria-current="true"]{
+  color:var(--ink);font-weight:600;border-bottom-color:var(--accent);background:var(--panel)
+}
+.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.steps .idx{color:var(--ink-3);margin-right:6px}
+.steps button[aria-current="true"] .idx{color:var(--accent)}
+.steps.vars button[aria-current="true"]{border-bottom-color:var(--warm)}
+
+.caption{
+  padding:12px 18px;font-size:14.5px;color:var(--ink-2);
+  border-bottom:1px solid var(--line);background:#fbfcfd;min-height:44px
+}
+.caption b{color:var(--ink)}
+
+.stage{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:900px){
+  .stage.split{grid-template-columns:1fr minmax(300px,.9fr)}
+  .stage.split .pane+.pane{border-left:1px solid var(--line);border-top:0}
+}
+.pane{padding:16px 18px 20px;min-width:0}
+.pane+.pane{border-top:1px solid var(--line)}
+.stage.solo .pane:first-child{display:none}
+.stage.solo .pane+.pane{border-top:0}
+.pane-lab{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:10px
+}
+.pane-lab .cnt{color:var(--accent);letter-spacing:.04em}
+.placeholder{
+  font-size:13.5px;color:var(--ink-3);font-style:italic;
+  border:1px dashed var(--line-2);padding:18px;text-align:center
+}
+
+.gridwrap{overflow-x:auto}
+.gridwrap.tall{max-height:430px;overflow-y:auto}
+.gridwrap.tall .hrow{position:sticky;top:0;background:var(--panel);padding-top:2px;z-index:1}
+.grid{font-family:var(--mono);font-size:13px;min-width:max-content}
+.hrow,.r,.res{display:grid;align-items:center}
+.hrow{
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  border-bottom:1px solid var(--line-2);padding-bottom:5px;margin-bottom:3px
+}
+.hrow.aliased{color:var(--accent);font-weight:600}
+.r{
+  padding:5px 0 5px 9px;border-left:3px solid transparent;
+  transition:background-color .35s ease,opacity .35s ease,border-color .35s ease
+}
+.r>span,.hrow>span,.res>span{padding-right:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r .num,.hrow .num,.res .num{text-align:right;padding-right:14px}
+.r.out{opacity:.3}
+.r.out .cell-key{text-decoration:line-through}
+.r.in{background:var(--okb);border-left-color:var(--ok)}
+.r.bad{background:var(--badb);border-left-color:var(--bad)}
+.cell-key{font-weight:600}
+.nullv{color:var(--ink-3);font-style:italic}
+.grid .colhi{background:var(--warmb)}
+.hrow .colhi{color:var(--warm);font-weight:600}
+.r.hi{background:var(--badb);border-left-color:var(--bad)}y
+.r.hi-ok{background:var(--okb);border-left-color:var(--ok)}
+.why{overflow:visible !important}
+
+.res{
+  padding:7px 0 7px 9px;border-left:3px solid transparent;background:transparent;
+  margin-bottom:3px
+}
+.res.cut{opacity:.28;border-left-color:var(--line-2);background:#fbfcfd}
+.res.plain{background:transparent;border-left-color:transparent}
+.res.bad{border-left-color:var(--bad);background:var(--badb)}
+.tag{
+  display:inline-block;font-size:10px;letter-spacing:.06em;
+  color:var(--ink-3);border:1px solid var(--line-2);padding:0 5px;border-radius:2px;
+  margin-left:8px;white-space:nowrap;font-family:var(--mono)
+}
+.tag.no{color:var(--bad);border-color:#e6b9c6;background:#fff}
+.tag.alert{color:var(--bad);border-color:var(--bad);background:var(--badb);font-weight:600}
+.appear{animation:pop .34s cubic-bezier(.2,.75,.35,1) both}
+@keyframes pop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+.pipe{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;
+  background:var(--panel);border:1px solid var(--line);padding:18px
+}
+.pstep{flex:1 1 140px;border-top:3px solid var(--accent);padding-top:9px}
+.pstep .pname{font-family:var(--mono);font-size:12.5px;font-weight:600}
+.pstep .pdesc{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin-top:3px}
+.pstep .pcount{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:6px}
+
+ol.ex{padding-left:22px;margin:0}
+ol.ex li{margin-bottom:16px}
+details.sol{margin-top:6px}
+details.sol summary{
+  font-family:var(--mono);font-size:12px;color:var(--accent);cursor:pointer;
+  letter-spacing:.04em
+}
+details.sol pre.sql{margin-top:8px}
+details.sol p{font-size:14px;color:var(--ink-2);margin:8px 0 0}
+
+footer{
+  margin-top:52px;padding-top:16px;border-top:1px solid var(--line-2);
+  font-size:13px;color:var(--ink-3)
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+<style>
+/* ---------- dodatki Bloku 2: grupy i błędy ---------- */
+/* wynik stoi bezpośrednio pod kodem, tabela źródłowa pod nim */
+.stage.rev .pane:nth-child(1){order:2;border-top:1px solid var(--line)}
+.stage.rev .pane:nth-child(2){order:1;border-top:0}
+.g0{background:#e7f0fa}
+.g1{background:#fdf3e3}
+.g2{background:#e9f5ec}
+.g3{background:#f6ecf6}
+.g4{background:#eaf3f4}
+.g5{background:#faeeea}
+.r.gout{opacity:.32;background:transparent}
+.res.gout{opacity:.3;background:#fbfcfd;border-left-color:var(--line-2)}
+.errbox{
+  border:1px solid #e6b9c6;border-left:3px solid var(--bad);background:var(--badb);
+  padding:14px 16px;font-family:var(--mono);font-size:13px;color:#7d2c44;line-height:1.5
+}
+.errbox b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;color:var(--bad)}
+.grouplab{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin:14px 0 6px
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Zintegrowana Analiza Danych z wykorzystaniem SQL i Pythona</p>
+  <p class="kicker">Zjazd 1 - Blok 2</p>
+  <h1>Agregaty, GROUP BY, HAVING</h1>
+  <p class="sub">Blok 1 odpowiadał na pytanie „które”. Ten blok odpowiada na pytanie „ile”. Każdy przykład pokazuje, co dzieje się z wierszami, kiedy przestają być jednostką wyniku i zaczyna nią być grupa.</p>
+</header>
+
+<div class="note">
+  <strong>Jak czytać te wizualizacje</strong>
+  Kod nad wizualizacją rośnie krok po kroku, a strzałka w lewym marginesie wskazuje linię dopisaną w danym kroku. Od momentu, w którym pojawia się GROUP BY, wiersze tabeli źródłowej dostają kolory grup: wszystkie wiersze w jednym kolorze zwijają się do jednego wiersza wyniku o pasku w tym samym kolorze. Pod kodem stoi wynik zapytania, a niżej tabela źródłowa, zawierająca komplet 54 produktów z bazy kursowej, więc każdy wynik można porównać z tym, co zwróci SSMS.
+</div>
+
+<h2>CASE 3 - przegląd katalogu przed rozmowami z dostawcami</h2>
+
+<div class="brief">
+  <div class="from">Mail od działu zakupów</div>
+  <q>Za dwa tygodnie mamy rundę rozmów z dostawcami. Zanim usiądziemy do stołu, muszę wiedzieć, jak wygląda nasz katalog: gdzie mamy dużo pozycji, gdzie mało, w jakich cenach się poruszamy w poszczególnych kategoriach. Chcę wchodzić na te rozmowy przygotowany, a nie z przeczuciem.</q>
+  <p class="after">Na negocjacje nie idzie się z wydrukiem stu produktów, tylko z kilkoma liczbami. Cały ten blok polega na zamianie listy wierszy w takie właśnie liczby.</p>
+</div>
+
+<h3>Od listy do jednej liczby</h3>
+
+<div class="demo" data-demo="a1"></div>
+
+<h3>GROUP BY, czyli według czego liczyć osobno</h3>
+<p>Dział zakupów prosił o rozbicie na kategorie. Pierwszy odruch jest naturalny i prowadzi prosto do komunikatu o błędzie, który warto zobaczyć na własne oczy, bo tłumaczy on całą mechanikę grupowania.</p>
+
+<div class="demo" data-demo="a2"></div>
+
+<div class="demo" data-demo="a3"></div>
+
+<h3>COUNT(DISTINCT), czyli ile różnych wartości</h3>
+
+<div class="brief">
+  <div class="from">Odpowiedź działu zakupów</div>
+  <q>Zanim ustalę harmonogram spotkań, chcę wiedzieć, ilu dostawców obsługuje każdą kategorię. Tam, gdzie jest tylko jeden, to on dyktuje warunki i to są najtrudniejsze rozmowy.</q>
+</div>
+
+<div class="demo" data-demo="a4"></div>
+
+<h3>Grupowanie po dwóch kolumnach</h3>
+
+<div class="brief">
+  <div class="from">Kolejny mail od działu zakupów</div>
+  <q>Wiem już, gdzie mamy jednego dostawcę, a gdzie kilku. Ale przy stole siadam z konkretną firmą. Pokaż mi, ile jej towaru u nas leży, w każdej kategorii osobno. Z jednym dostawcą rozmawiam i o żywności, i o wyposażeniu.</q>
+</div>
+
+<div class="demo" data-demo="a5"></div>
+
+<h3>HAVING, czyli filtrowanie grup</h3>
+
+<div class="brief">
+  <div class="from">Dział zakupów po otrzymaniu zestawienia</div>
+  <q>Tej listy nie przejrzę przed spotkaniem. Poniżej 50 sztuk zaczynamy rozmowę od uzupełnienia zapasu. Pokaż mi tylko te pary.</q>
+</div>
+
+<div class="demo" data-demo="a6"></div>
+
+<h2>Kolejność wykonania zapytania</h2>
+<p>Wszystkie „dlaczego” tego bloku wynikają z jednej linijki. Serwer wykonuje zapytanie w tej kolejności:</p>
+<div class="pipe">
+  <div class="pstep"><div class="pname">FROM</div><div class="pdesc">Bierzemy wiersze z tabeli.</div><div class="pcount">54 wiersze</div></div>
+  <div class="pstep"><div class="pname">WHERE</div><div class="pdesc">Odsiewamy pojedyncze wiersze.</div><div class="pcount">50 wierszy</div></div>
+  <div class="pstep"><div class="pname">GROUP BY</div><div class="pdesc">Dzielimy je na grupy.</div><div class="pcount">45 grup</div></div>
+  <div class="pstep"><div class="pname">HAVING</div><div class="pdesc">Odsiewamy całe grupy.</div><div class="pcount">10 grup</div></div>
+  <div class="pstep"><div class="pname">SELECT</div><div class="pdesc">Liczymy agregaty i nadajemy aliasy.</div><div class="pcount">tu powstaje alias</div></div>
+  <div class="pstep"><div class="pname">ORDER BY</div><div class="pdesc">Ustawiamy kolejność wyniku.</div><div class="pcount">alias już działa</div></div>
+</div>
+
+<p style="margin-top:22px">Z tej kolejności wynikają dwa błędy, na które przy pierwszych zapytaniach z <code>GROUP BY</code> wpada prawie każdy.</p>
+
+<div class="demo" data-demo="a7"></div>
+
+<h2>Ćwiczenia samodzielne</h2>
+<p>Rozwiąż je w SSMS na bazie <code>EcommerceCourseDB</code>. Przy każdym zleceniu zastanów się najpierw, <b>co jest jednostką wyniku</b>: pojedynczy wiersz czy grupa.</p>
+<ol class="ex">
+  <li>Dział logistyki planuje rozmieszczenie towaru w magazynie i pyta, ilu mamy dostawców w każdym kraju. Od krajów z największą liczbą dostawców.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    Country  AS Kraj,
+    COUNT(*) AS LiczbaDostawcow
+FROM Suppliers
+GROUP BY Country
+ORDER BY LiczbaDostawcow DESC;</pre>
+    <p>Jednostką wyniku jest kraj, a nie dostawca, więc w <code>SELECT</code> może wystąpić tylko <code>Country</code> oraz agregat. Sortowanie po aliasie działa, ponieważ <code>ORDER BY</code> wykonuje się po <code>SELECT</code>.</p></details>
+  </li>
+  <li>Zarząd sprawdza, czy oferta nie jest zbyt tania. Które kategorie mają średnią cenę produktu powyżej 100 zł? Pokaż tylko identyfikator kategorii i tę średnią, bez rozpisywania pozostałych liczb.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CategoryID     AS Kategoria,
+    AVG(UnitPrice) AS SredniaCena
+FROM Products
+GROUP BY CategoryID
+HAVING AVG(UnitPrice) > 100;</pre>
+    <p>W <code>HAVING</code> trzeba powtórzyć całe wyrażenie <code>AVG(UnitPrice)</code>, ponieważ alias <code>SredniaCena</code> jeszcze nie istnieje. Na naszych danych warunek spełniają cztery kategorie: 1, 2, 4 i 6.</p></details>
+  </li>
+  <li>Marketing przygotowuje kampanię i pyta, ile zamówień złożył każdy klient oraz kiedy ostatni raz coś u nas kupił. Od klientów z największą liczbą zamówień.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CustomerID,
+    COUNT(*)       AS LiczbaZamowien,
+    MAX(OrderDate) AS OstatnieZamowienie
+FROM Orders
+GROUP BY CustomerID
+ORDER BY LiczbaZamowien DESC;</pre>
+    <p><code>MAX</code> działa nie tylko na liczbach: na kolumnie typu <code>DATE</code> zwraca datę najpóźniejszą. To najprostszy sposób na pytanie „kiedy ostatnio”.</p></details>
+  </li>
+  <li>Dział zakupów wraca z ostatnią prośbą przed spotkaniami: chce kategorie, w których mamy więcej niż 5 pozycji, ale łączny stan magazynowy nie przekracza 300 sztuk. Szeroka oferta na wyczerpaniu to najpilniejsze rozmowy.
+    <details class="sol"><summary>pokaż rozwiązanie</summary>
+    <pre class="sql plain" data-sql>SELECT
+    CategoryID        AS Kategoria,
+    COUNT(*)          AS LiczbaPozycji,
+    SUM(UnitsInStock) AS SztukNaStanie
+FROM Products
+WHERE Discontinued = 0
+GROUP BY CategoryID
+HAVING COUNT(*) > 5
+   AND SUM(UnitsInStock) &lt;= 300;</pre>
+    <p>Dwa warunki w <code>HAVING</code>, oba na agregatach, połączone przez <code>AND</code>. Na naszych danych przechodzi jedna kategoria, numer 2: sześć pozycji i 197 sztuk łącznie. Kategorie 1 i 3 też mają ponad pięć pozycji, ale ich zapasy sięgają setek sztuk.</p></details>
+  </li>
+</ol>
+
+<h2>Podsumowanie i mostek do Bloku 3</h2>
+<p>Cały ten blok to jedna zmiana: przestaliśmy pytać „które”, a zaczęliśmy pytać „ile”. Składnia z Bloku 1 działa dalej bez zmian, czyli <code>WHERE</code>, <code>ORDER BY</code> i aliasy. Doszły dwie rzeczy: agregaty, które zwijają wiele wierszy do jednej liczby, oraz <code>GROUP BY</code>, który mówi bazie, według czego to zwijanie rozbić.</p>
+<p>Dział zakupów dostał to, o co prosił: liczbę pozycji, ceny, dostawców i stany magazynowe. Ostatnie zestawienie ma jednak wadę. Mały zapas sam w sobie nic nie znaczy. Jeżeli towar się nie sprzedaje, może leżeć w dziesięciu sztukach przez rok i nikomu to nie przeszkadza, a zamawianie go byłoby wręcz błędem. Odwrotnie: pięćdziesiąt sztuk czegoś, co schodzi w tydzień, to sytuacja alarmowa, której nasze zestawienie w ogóle nie pokazuje.</p>
+<p>Ta sama liczba znaczy więc dwie przeciwne rzeczy, w zależności od czegoś, czego w tabeli <code>Products</code> nie ma. Products wie, <b>ile mamy</b>. Nie wie, <b>ile sprzedaliśmy</b>. Ta informacja leży w <code>OrderDetails</code>, w zupełnie innym miejscu bazy, a żaden <code>WHERE</code>, <code>GROUP BY</code> ani <code>HAVING</code> nie sięgnie do kolumny, której w tej tabeli nie ma. Potrzebne jest narzędzie łączące obie tabele w jednym zapytaniu, czyli <code>JOIN</code>. Tym zajmiemy się w Bloku 3.</p>
+
+<footer>
+  Materiał towarzyszący plikowi <code>Z1B2.sql</code><br><br> 
+  © 2026 Małgorzata Pykała
+</footer>
+</div>
+<script>
+/* ============================================================
+   1. DANE: tabela Products w całości
+   ============================================================ */
+/* Products: komplet 54 wierszy z bazy kursowej */
+const PRODUCTS = [
+  {id:1, name:'Słuchawki bezprzewodowe', cat:1, sup:11, price:249.0, stock:14, disc:0},
+  {id:2, name:'Ładowarka USB-C', cat:1, sup:4, price:59.9, stock:220, disc:0},
+  {id:3, name:'Powerbank 10000mAh', cat:1, sup:15, price:129.0, stock:180, disc:0},
+  {id:4, name:'Kamera internetowa', cat:1, sup:1, price:189.0, stock:16, disc:0},
+  {id:5, name:'Głośnik Bluetooth', cat:1, sup:1, price:449.0, stock:95, disc:0},
+  {id:6, name:'Mysz bezprzewodowa', cat:1, sup:9, price:89.0, stock:260, disc:0},
+  {id:7, name:'Klawiatura mechaniczna', cat:1, sup:13, price:449.0, stock:74, disc:0},
+  {id:8, name:'Monitor 24 cale', cat:1, sup:12, price:899.0, stock:41, disc:0},
+  {id:9, name:'Koszulka bawełniana', cat:2, sup:13, price:49.0, stock:62, disc:0},
+  {id:10, name:'Kurtka zimowa', cat:2, sup:6, price:399.0, stock:11, disc:0},
+  {id:11, name:'Spodnie jeansowe', cat:2, sup:1, price:199.0, stock:17, disc:0},
+  {id:12, name:'Sweter wełniany', cat:2, sup:15, price:159.0, stock:19, disc:0},
+  {id:13, name:'Czapka zimowa', cat:2, sup:11, price:69.0, stock:48, disc:0},
+  {id:14, name:'Skarpety sportowe', cat:2, sup:4, price:24.9, stock:40, disc:0},
+  {id:15, name:'Zestaw garnków', cat:3, sup:13, price:249.0, stock:38, disc:0},
+  {id:16, name:'Lampa stołowa', cat:3, sup:14, price:89.0, stock:415, disc:0},
+  {id:17, name:'Doniczka ceramiczna', cat:3, sup:14, price:34.9, stock:260, disc:0},
+  {id:18, name:'Narzędzia ogrodnicze', cat:3, sup:11, price:119.0, stock:96, disc:0},
+  {id:19, name:'Poduszka dekoracyjna', cat:3, sup:2, price:59.0, stock:240, disc:0},
+  {id:20, name:'Świece zapachowe', cat:3, sup:4, price:29.9, stock:380, disc:0},
+  {id:21, name:'Mata do jogi', cat:4, sup:15, price:89.0, stock:130, disc:0},
+  {id:22, name:'Hantle 5kg', cat:4, sup:6, price:79.0, stock:26, disc:1},
+  {id:23, name:'Rower miejski', cat:4, sup:14, price:1490.0, stock:12, disc:0},
+  {id:24, name:'Namiot turystyczny', cat:4, sup:2, price:349.0, stock:58, disc:0},
+  {id:25, name:'Piłka do koszykówki', cat:4, sup:12, price:69.0, stock:210, disc:0},
+  {id:26, name:'Bidon sportowy', cat:4, sup:15, price:29.9, stock:340, disc:0},
+  {id:27, name:'Powieść kryminalna', cat:5, sup:3, price:39.9, stock:190, disc:0},
+  {id:28, name:'Poradnik biznesowy', cat:5, sup:12, price:59.0, stock:145, disc:0},
+  {id:29, name:'Atlas geograficzny', cat:5, sup:6, price:89.0, stock:62, disc:0},
+  {id:30, name:'Książka kucharska', cat:5, sup:2, price:69.0, stock:230, disc:0},
+  {id:31, name:'Biografia', cat:5, sup:11, price:44.9, stock:275, disc:0},
+  {id:32, name:'Klocki konstrukcyjne', cat:6, sup:2, price:149.0, stock:165, disc:0},
+  {id:33, name:'Puzzle 500 elementów', cat:6, sup:9, price:34.9, stock:290, disc:0},
+  {id:34, name:'Pluszowy miś', cat:6, sup:1, price:59.0, stock:118, disc:0},
+  {id:35, name:'Gra planszowa', cat:6, sup:9, price:119.0, stock:84, disc:0},
+  {id:36, name:'Samochodzik zdalnie sterowany', cat:6, sup:2, price:199.0, stock:47, disc:0},
+  {id:37, name:'Krem nawilżający', cat:7, sup:12, price:79.0, stock:152, disc:0},
+  {id:38, name:'Szampon do włosów', cat:7, sup:13, price:24.9, stock:410, disc:0},
+  {id:39, name:'Perfumy', cat:7, sup:11, price:249.0, stock:36, disc:0},
+  {id:40, name:'Balsam do ciała', cat:7, sup:4, price:34.9, stock:325, disc:0},
+  {id:41, name:'Kawa ziarnista 1kg', cat:8, sup:13, price:69.0, stock:18, disc:1},
+  {id:42, name:'Herbata zielona', cat:8, sup:6, price:24.9, stock:350, disc:0},
+  {id:43, name:'Oliwa z oliwek', cat:8, sup:15, price:44.9, stock:245, disc:0},
+  {id:44, name:'Czekolada gorzka', cat:8, sup:1, price:12.9, stock:460, disc:0},
+  {id:45, name:'Miód naturalny', cat:8, sup:2, price:39.9, stock:22, disc:1},
+  {id:46, name:'Zeszyt A4', cat:9, sup:13, price:6.9, stock:480, disc:0},
+  {id:47, name:'Długopis żelowy', cat:9, sup:8, price:4.9, stock:520, disc:0},
+  {id:48, name:'Organizer na biurko', cat:9, sup:14, price:79.0, stock:74, disc:0},
+  {id:49, name:'Papier do drukarki', cat:9, sup:9, price:79.0, stock:310, disc:0},
+  {id:50, name:'Segregator', cat:9, sup:5, price:12.9, stock:395, disc:0},
+  {id:51, name:'Witamina C', cat:10, sup:8, price:39.9, stock:205, disc:0},
+  {id:52, name:'Termometr elektroniczny', cat:10, sup:4, price:49.0, stock:88, disc:0},
+  {id:53, name:'Maseczki ochronne', cat:10, sup:4, price:19.9, stock:6, disc:1},
+  {id:54, name:'Suplement magnezowy', cat:10, sup:11, price:29.9, stock:170, disc:0}
+];
+
+const money = v => v.toLocaleString('pl-PL',{minimumFractionDigits:2, maximumFractionDigits:2});
+const plWiersz = n => n + ' ' + (n===1 ? 'wiersz' : (n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14) ? 'wiersze' : 'wierszy'));
+const plGrupa  = n => n + ' ' + (n===1 ? 'grupa'  : (n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14) ? 'grupy'  : 'grup'));
+
+const COLS = {
+  products:[
+    {k:'id',    h:'ProductID',    w:'92px',  v:r=>r.id, key:true, num:true},
+    {k:'name',  h:'ProductName',  w:'190px', v:r=>r.name},
+    {k:'cat',   h:'CategoryID',   w:'105px', v:r=>r.cat, num:true},
+    {k:'sup',   h:'SupplierID',   w:'105px', v:r=>r.sup, num:true},
+    {k:'price', h:'UnitPrice',    w:'100px', v:r=>money(r.price), num:true},
+    {k:'stock', h:'UnitsInStock', w:'120px', v:r=>r.stock, num:true},
+    {k:'disc',  h:'Discontinued', w:'118px', v:r=>r.disc, num:true}
+  ]
+};
+const SRC = {products:PRODUCTS};
+const colOf = (t,k) => COLS[t].find(c=>c.k===k);
+
+/* paleta grup: te same kolory po stronie tabeli i wyniku */
+const GC = ['#5b8ec4','#c69130','#4f9b6a','#9a6a9a','#4f9298','#bd7050'];
+
+/* ============================================================
+   2. KOLOROWANIE SQL I KOD, KTÓRY ROŚNIE
+   ============================================================ */
+const KW = new Set(('select from where order by asc desc as and or not in between like is null '+
+  'distinct top group having use go').split(' '));
+const FN = new Set(['count','sum','avg','min','max']);
+
+function highlight(src){
+  const esc = src.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/(--[^\n]*)|('[^']*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
+    (m, c, s, n, w) => {
+      if(c) return '<span class="c">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(n) return '<span class="n">'+n+'</span>';
+      const lw = w.toLowerCase();
+      if(KW.has(lw)) return '<span class="k">'+w+'</span>';
+      if(FN.has(lw)) return '<span class="f">'+w+'</span>';
+      return w;
+    });
+}
+document.querySelectorAll('pre.sql[data-sql]').forEach(p => { p.innerHTML = highlight(p.textContent); });
+
+/* klucz porównania linii: bez wcięć, wyrównania i przecinka na końcu,
+   bo dopisanie kolejnej kolumny nie czyni poprzedniej nową */
+function lineKey(l){ return l.t.replace(/\s+/g,' ').trim().replace(/,$/,'') + '|' + (l.cm||''); }
+
+function renderLines(model, hotKeys){
+  let lastCode = -1;
+  model.forEach((l,n)=>{ const t=l.t.trim(); if(t && !t.startsWith('--')) lastCode = n; });
+  const base = model.map((l,n)=> l.t + (n===lastCode ? ';' : ''));
+  const pad  = model.some(l=>l.cm) ? Math.max(...base.map(t=>t.length)) + 2 : 0;
+  return model.map((l,n)=>{
+    const hot = hotKeys ? hotKeys.has(lineKey(l)) : !!l.hot;
+    const txt = l.cm ? base[n].padEnd(pad) + '-- ' + l.cm : base[n];
+    const code = highlight(txt).replace(/«/g,'<span class="dm">').replace(/»/g,'</span>');
+    return '<span class="ln'+(hot?' hot':'')+'">'+code+'</span>';
+  }).join('');
+}
+
+/* ============================================================
+   3. FLIP i budowanie siatki
+   ============================================================ */
+function flip(container, mutate){
+  const before = new Map();
+  [...container.children].forEach(el => before.set(el, el.getBoundingClientRect()));
+  mutate();
+  const mm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if((mm && mm.matches) || !document.createElement('div').animate) return;
+  [...container.children].forEach(el => {
+    const b = before.get(el);
+    if(!b) return;
+    const a = el.getBoundingClientRect();
+    const dx = b.left - a.left, dy = b.top - a.top;
+    if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],
+      {duration:520, easing:'cubic-bezier(.2,.75,.3,1)'});
+  });
+}
+
+function gridTemplate(cols){ return cols.map(c=>c.w).join(' '); }
+
+function buildHead(cols){
+  const el = document.createElement('div');
+  el.className = 'hrow';
+  el.style.gridTemplateColumns = gridTemplate(cols);
+  cols.forEach(c=>{
+    const s = document.createElement('span');
+    s.textContent = c.h;
+    if(c.num) s.className='num';
+    el.appendChild(s);
+  });
+  return el;
+}
+
+function fillRow(el, row, cols, extra){
+  el.innerHTML = '';
+  el.style.gridTemplateColumns = gridTemplate(cols) + (extra ? ' auto' : '');
+  cols.forEach(c=>{
+    const s = document.createElement('span');
+    const val = c.v(row);
+    s.textContent = (val === null || val === undefined) ? '' : val;
+    if(c.num) s.className = 'num';
+    if(c.key) s.className = (s.className+' cell-key').trim();
+    el.appendChild(s);
+  });
+  if(extra){
+    const s = document.createElement('span');
+    s.className = 'why';
+    el.appendChild(s);
+  }
+  return el;
+}
+
+function setWhy(el, html, cls){
+  const cell = el.lastElementChild;
+  if(!cell || !cell.classList.contains('why')) return;
+  cell.innerHTML = html ? '<span class="tag '+(cls||'')+'">'+html+'</span>' : '';
+}
+
+function scrollToRow(wrap, row){
+  if(!wrap || !row) return;
+  const grid = wrap.firstElementChild;
+  const top = Math.max(0, row.offsetTop - grid.offsetTop - 70);
+  try{
+    if(typeof wrap.scrollTo === 'function') wrap.scrollTo({top:top, behavior:'smooth'});
+    else wrap.scrollTop = top;
+  }catch(e){ wrap.scrollTop = top; }
+}
+
+function passAll(row, preds){ return preds.every(p=>p.fn(row)); }
+function failLabel(row, preds){
+  const f = preds.find(p=>!p.fn(row));
+  return f ? f.label : '';
+}
+
+/* ============================================================
+   4. SILNIK: etapy zapytania, grupy i agregaty
+   ============================================================ */
+class Demo{
+  constructor(host, spec){
+    this.host = host; this.spec = spec;
+    this.cols = COLS[spec.table];
+    this.rows = SRC[spec.table];
+    this.srcNodes = new Map();
+    this.resNodes = new Map();
+    this.paint();
+    this.setStage(0);
+  }
+
+  paint(){
+    const s = this.spec;
+    this.host.innerHTML = `
+      <header>
+        <div class="qnum">Przykład ${s.no}</div>
+        <p class="q">„${s.q}”</p>
+      </header>
+      <pre class="sql"></pre>
+      <div class="steps${s.mode === 'variants' ? ' vars' : ''}" role="tablist"></div>
+      <div class="caption"></div>
+      <div class="stage rev">
+        <div class="pane">
+          <div class="pane-lab">Tabela źródłowa · ${s.tableLabel} <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="src"></div></div></div>
+        </div>
+        <div class="pane">
+          <div class="pane-lab">Wynik zapytania <span class="cnt"></span></div>
+          <div class="gridwrap tall"><div class="grid"><div class="out"></div></div></div>
+        </div>
+      </div>`;
+    this.$sql   = this.host.querySelector('pre.sql');
+    this.$steps = this.host.querySelector('.steps');
+    this.$cap   = this.host.querySelector('.caption');
+    this.$src   = this.host.querySelector('.src');
+    this.$out   = this.host.querySelector('.out');
+    this.$cntS  = this.host.querySelectorAll('.pane-lab .cnt')[0];
+    this.$cntR  = this.host.querySelectorAll('.pane-lab .cnt')[1];
+    this.$srcWrap = this.host.querySelectorAll('.gridwrap')[0];
+    this.$outWrap = this.host.querySelectorAll('.gridwrap')[1];
+
+    s.stages.forEach((st,i)=>{
+      const b = document.createElement('button');
+      const idx = s.mode === 'variants' ? String.fromCharCode(65+i) : (i+1);
+      b.innerHTML = `<span class="idx">${idx}</span>${st.label}`;
+      b.onclick = ()=>this.setStage(i);
+      this.$steps.appendChild(b);
+    });
+
+    this.$src.appendChild(buildHead(this.cols));
+    this.rows.forEach(r=>{
+      const el = document.createElement('div');
+      el.className = 'r';
+      fillRow(el, r, this.cols, true);
+      this.srcNodes.set(r, el);
+      this.$src.appendChild(el);
+    });
+    this.$cntS.textContent = '· ' + plWiersz(this.rows.length);
+  }
+
+  /* grupy w kolejności pierwszego wystąpienia */
+  buildGroups(rows, keys){
+    const map = new Map();
+    rows.forEach(r=>{
+      const k = keys.map(x=>r[x]).join('|');
+      if(!map.has(k)) map.set(k, {key:k, vals:keys.map(x=>r[x]), rows:[]});
+      map.get(k).rows.push(r);
+    });
+    return [...map.values()];
+  }
+
+  setStage(i){
+    const s = this.spec, st = s.stages[i];
+    [...this.$steps.children].forEach((b,j)=>b.setAttribute('aria-current', j===i?'true':'false'));
+    this.$cap.innerHTML = st.cap || '';
+
+    /* kod: strzałka tylko przy liniach dopisanych względem poprzedniego etapu */
+    if(s.mode === 'variants' || i === 0){
+      this.$sql.innerHTML = renderLines(st.sql, new Set()).replace(/class="ln"/g, 'class="ln full"');
+    } else {
+      const prev = new Set(s.stages[i-1].sql.map(lineKey));
+      const hot = new Set();
+      st.sql.forEach(l=>{ const k = lineKey(l); if(!prev.has(k)) hot.add(k); });
+      this.$sql.innerHTML = renderLines(st.sql, hot);
+    }
+
+    const preds = st.where || [];
+    const kept = preds.length ? this.rows.filter(r=>passAll(r, preds)) : this.rows.slice();
+    const keptSet = new Set(kept);
+
+    /* grupy i te odrzucone przez HAVING */
+    let groups = null, live = null, groupOf = new Map(), dead = new Set();
+    if(st.groupBy){
+      groups = this.buildGroups(kept, st.groupBy);
+      groups.forEach((g,n)=>{ g.idx = n; g.rows.forEach(r=>groupOf.set(r, g)); });
+      if(st.having){
+        live = groups.filter(g=>st.having.fn(g));
+        groups.filter(g=>!st.having.fn(g)).forEach(g=>dead.add(g));
+      } else {
+        live = groups.slice();
+      }
+      if(st.order) live = live.slice().sort(st.order);
+    }
+
+    /* tabela źródłowa */
+    this.rows.forEach(r=>{
+      const el = this.srcNodes.get(r);
+      el.className = 'r';
+      if(preds.length && !keptSet.has(r)){
+        el.classList.add('out');
+        setWhy(el, failLabel(r, preds), 'no');
+      } else if(st.groupBy){
+        const g = groupOf.get(r);
+        if(dead.has(g)){
+          el.classList.add('gout');
+          setWhy(el, st.having.label, 'no');
+        } else {
+          el.classList.add('g' + (g.idx % 6));
+          setWhy(el, '');
+        }
+      } else {
+        setWhy(el, '');
+      }
+    });
+    if(preds.length && kept.length) scrollToRow(this.$srcWrap, this.srcNodes.get(kept[0]));
+    if(this.$outWrap) this.$outWrap.scrollTop = 0;
+
+    /* wynik */
+    if(st.error){ this.renderError(st.error); return; }
+    if(st.groupBy)      this.renderGroups(st, live);
+    else if(st.aggs)    this.renderTotal(st, kept);
+    else                this.renderList(st, kept);
+  }
+
+  renderError(msg){
+    this.$out.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'errbox';
+    box.innerHTML = '<b>Zapytanie nie wykonało się</b>' + msg;
+    this.$out.appendChild(box);
+    this.$cntR.textContent = '· błąd';
+  }
+
+  renderList(st, rows){
+    const cols = st.cols.map(k=>colOf(this.spec.table, k));
+    let out = rows.slice();
+    if(st.order) out.sort(st.order);
+    flip(this.$out, ()=>{
+      this.$out.innerHTML = '';
+      this.$out.appendChild(buildHead(cols));
+      out.forEach((r,n)=>{
+        let el = this.resNodes.get(r);
+        const fresh = !el;
+        if(fresh){ el = document.createElement('div'); this.resNodes.set(r, el); }
+        el.className = 'res' + (fresh ? ' appear' : '');
+        el.style.borderLeftColor = '';
+        if(fresh) el.style.animationDelay = Math.min(n*25, 600)+'ms';
+        fillRow(el, r, cols, false);
+        this.$out.appendChild(el);
+      });
+    });
+    this.$cntR.textContent = '· ' + plWiersz(out.length);
+  }
+
+  renderTotal(st, rows){
+    const cols = st.aggs.map(a=>({h:a.h, w:a.w||'170px', num:true, v:()=>a.fmt ? a.fmt(a.fn(rows)) : a.fn(rows)}));
+    this.$out.innerHTML = '';
+    this.$out.appendChild(buildHead(cols));
+    const el = document.createElement('div');
+    el.className = 'res appear';
+    fillRow(el, rows, cols, false);
+    this.$out.appendChild(el);
+    this.resNodes = new Map();
+    this.$cntR.textContent = '· ' + plWiersz(1);
+  }
+
+  renderGroups(st, live){
+    const t = this.spec.table;
+    const keyCols = st.groupBy.map((k,n)=>{
+      const c = colOf(t, k);
+      return {h:c.h, w:c.w, num:c.num, v:g=>g.vals[n]};
+    });
+    const aggCols = st.aggs.map(a=>({h:a.h, w:a.w||'160px', num:true,
+      v:g=> a.fmt ? a.fmt(a.fn(g.rows)) : a.fn(g.rows)}));
+    const cols = keyCols.concat(aggCols);
+    flip(this.$out, ()=>{
+      this.$out.innerHTML = '';
+      this.$out.appendChild(buildHead(cols));
+      live.forEach((g,n)=>{
+        let el = this.resNodes.get(g.key);
+        const fresh = !el;
+        if(fresh){ el = document.createElement('div'); this.resNodes.set(g.key, el); }
+        el.className = 'res g' + (g.idx % 6) + (fresh ? ' appear' : '');
+        el.style.borderLeftColor = GC[g.idx % 6];
+        if(fresh) el.style.animationDelay = Math.min(n*30, 600)+'ms';
+        fillRow(el, g, cols, false);
+        this.$out.appendChild(el);
+      });
+    });
+    this.$cntR.textContent = '· ' + plGrupa(live.length);
+  }
+}
+</script>
+<script>
+/* ============================================================
+   5. AGREGATY I PRZYKŁADY
+   ============================================================ */
+const AC = {
+  count:{h:'LiczbaProduktow', w:'170px', fn:rows=>rows.length},
+  avg:  {h:'SredniaCena',     w:'140px', fn:rows=>rows.reduce((s,r)=>s+r.price,0)/rows.length, fmt:money},
+  min:  {h:'Najtanszy',       w:'130px', fn:rows=>Math.min(...rows.map(r=>r.price)), fmt:money},
+  max:  {h:'Najdrozszy',      w:'135px', fn:rows=>Math.max(...rows.map(r=>r.price)), fmt:money},
+  dist: {h:'LiczbaDostawcow', w:'165px', fn:rows=>new Set(rows.map(r=>r.sup)).size},
+  sum:  {h:'SztukNaStanie',   w:'155px', fn:rows=>rows.reduce((s,r)=>s+r.stock,0)}
+};
+const wSprzedazy = [{label:'produkt wycofany', fn:r=>r.disc===0}];
+const poNazwie = (a,b)=>a.name.localeCompare(b.name,'pl');
+
+/* kod powtarzający się między etapami, żeby diff był czysty */
+const L = {
+  from:  {t:'FROM Products'},
+  where: {t:'WHERE Discontinued = 0'},
+  gCat:  {t:'GROUP BY CategoryID'},
+  gPara: {t:'GROUP BY CategoryID, SupplierID'}
+};
+
+const SPECS = {
+
+a1:{
+  no:'1 i 2', table:'products', tableLabel:'Products',
+  q:'Jak wygląda nasz katalog?',
+  stages:[
+    {
+      label:'lista wierszy',
+      sql:[{t:'SELECT CategoryID, ProductName, UnitPrice'}, L.from, L.where,
+           {t:'ORDER BY CategoryID, ProductName'}],
+      where:wSprzedazy,
+      cols:['cat','name','price'],
+      order:(a,b)=> a.cat-b.cat || poNazwie(a,b),
+      cap:'Punkt wyjścia to wszystko, co potrafiliśmy do tej pory: lista wierszy uporządkowana kategoriami. Pięćdziesiąt produktów w sprzedaży, cztery wycofane odsiał <code>WHERE</code>. Widać, że w jednych kategoriach pozycji jest sporo, a w innych kilka, ale żeby podać liczbę, trzeba by policzyć palcem po ekranie. Warto od razu uważać na słowo „ile”: ile pozycji w katalogu to nie to samo, co ile sztuk na magazynie. Kategoria z trzema produktami może mieć tysiąc sztuk na stanie, a kategoria z pięćdziesięcioma po dwie sztuki każdego.'
+    },
+    {
+      label:'COUNT(*)',
+      sql:[{t:'SELECT COUNT(*) AS LiczbaProduktow'}, L.from, L.where],
+      where:wSprzedazy,
+      aggs:[AC.count],
+      cap:'Ta sama tabela i ten sam <code>WHERE</code>. Zmieniła się wyłącznie lista kolumn w <code>SELECT</code>, a wynik przestał być listą i stał się jedną liczbą. <code>COUNT(*)</code> zlicza wiersze, które przeszły przez <code>WHERE</code>, a gwiazdka nie oznacza tu „wszystkich kolumn” jak w <code>SELECT *</code>, tylko „policz wiersze, nie patrząc na zawartość”. Filtr wykonuje się przed liczeniem: najpierw odsiewamy wycofane produkty, potem liczymy, ile zostało.'
+    }
+  ]
+},
+
+a2:{
+  no:'3 i 4', table:'products', tableLabel:'Products',
+  q:'Ale my chcieliśmy w podziale na kategorie',
+  stages:[
+    {
+      label:'pierwszy odruch',
+      sql:[{t:'SELECT CategoryID, COUNT(*) AS LiczbaProduktow'}, L.from, L.where],
+      where:wSprzedazy,
+      error:'Msg 8120, Level 16, State 1<br>Column \'Products.CategoryID\' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.',
+      cap:'Odruch jest naturalny: skoro chcę liczbę w rozbiciu na kategorie, dopiszę <code>CategoryID</code> do <code>SELECT</code>. Uruchom to u siebie, bo komunikat mówi prostą rzecz. <code>COUNT(*)</code> zwija wszystkie wiersze do jednego, a <code>CategoryID</code> ma w tych wierszach dziesięć różnych wartości. Którą z nich baza miałaby pokazać obok tej jednej liczby? Zapytanie jest wewnętrznie sprzeczne: jedna jego część mówi „policz wszystko razem”, druga „pokaż rozbicie”. Trzeba powiedzieć bazie, według czego ma to rozbić.'
+    },
+    {
+      label:'GROUP BY',
+      sql:[{t:'SELECT CategoryID, COUNT(*) AS LiczbaProduktow'}, L.from, L.where, L.gCat],
+      where:wSprzedazy,
+      groupBy:['cat'],
+      aggs:[AC.count],
+      cap:'<b>GROUP BY</b> dzieli wiersze na grupy według wartości kolumny, a agregat liczy się osobno w każdej grupie. Kolory w tabeli pokazują ten podział: wszystkie wiersze w jednym kolorze zwijają się do jednego wiersza wyniku. Zwróć uwagę, co stało się z liczbą wierszy: w poprzednim przykładzie był jeden, teraz jest ich dziesięć, czyli tyle, ile kategorii. Grupa stała się jednostką wyniku, a pojedynczy produkt przestał w nim istnieć. Dlatego w <code>SELECT</code> mogą wystąpić tylko kolumny wymienione w <code>GROUP BY</code> albo wyniki agregatów. <code>ProductName</code> nadal by nie przeszedł, bo w grupie jest kilka różnych nazw.'
+    }
+  ]
+},
+
+a3:{
+  no:5, table:'products', tableLabel:'Products',
+  q:'Skoro już liczymy, dodajcie ceny',
+  stages:[
+    {
+      label:'punkt wyjścia',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'}, {t:'    COUNT(*) AS LiczbaProduktow'}, L.from, L.where, L.gCat],
+      where:wSprzedazy, groupBy:['cat'], aggs:[AC.count],
+      cap:'Zestawienie z poprzedniego przykładu: dziesięć kategorii i liczba pozycji w każdej. Dział zakupów odpowiedział, że to dopiero połowa obrazu, bo pięć produktów po 2000 zł to zupełnie inna rozmowa niż pięć produktów po 20 zł.'
+    },
+    {
+      label:'ceny',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'},
+           {t:'    COUNT(*)       AS LiczbaProduktow,'},
+           {t:'    AVG(UnitPrice) AS SredniaCena,'},
+           {t:'    MIN(UnitPrice) AS Najtanszy,'},
+           {t:'    MAX(UnitPrice) AS Najdrozszy'},
+           L.from, L.where, L.gCat],
+      where:wSprzedazy, groupBy:['cat'], aggs:[AC.count, AC.avg, AC.min, AC.max],
+      cap:'Cztery agregaty naraz. Każdy liczy się na tej samej grupie, niezależnie od pozostałych, a <code>GROUP BY</code> nie wymaga zmiany, bo podział na grupy jest jeden, natomiast agregatów może być dowolnie wiele. <code>MIN</code> i <code>MAX</code> obok <code>AVG</code> nie są ozdobą: kategoria 4 ma średnią 405,38 zł, ale jej najtańsza pozycja kosztuje 29,90 zł, a najdroższa 1490 zł. Sama średnia sugerowałaby równomiernie drogi asortyment, a w rzeczywistości jest tam jeden rower i kilka drobiazgów. Na negocjacjach to różnica nie do pominięcia.'
+    }
+  ]
+},
+
+a4:{
+  no:6, table:'products', tableLabel:'Products',
+  q:'Z iloma firmami w ogóle rozmawiamy?',
+  stages:[
+    {
+      label:'punkt wyjścia',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'},
+           {t:'    COUNT(*)       AS LiczbaProduktow,'},
+           {t:'    AVG(UnitPrice) AS SredniaCena,'},
+           {t:'    MIN(UnitPrice) AS Najtanszy,'},
+           {t:'    MAX(UnitPrice) AS Najdrozszy'},
+           L.from, L.where, L.gCat],
+      where:wSprzedazy, groupBy:['cat'], aggs:[AC.count, AC.avg, AC.min, AC.max],
+      cap:'Zestawienie cenowe z poprzedniego przykładu. Dział zakupów pyta teraz o coś innego, więc kolumny cenowe ustępują miejsca nowej liczbie.'
+    },
+    {
+      label:'COUNT(DISTINCT)',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'},
+           {t:'    COUNT(*)                   AS LiczbaProduktow,'},
+           {t:'    COUNT(DISTINCT SupplierID) AS LiczbaDostawcow'},
+           L.from, L.where, L.gCat,
+           {t:'ORDER BY LiczbaDostawcow'}],
+      where:wSprzedazy, groupBy:['cat'], aggs:[AC.count, AC.dist],
+      order:(a,b)=> AC.dist.fn(a.rows) - AC.dist.fn(b.rows),
+      cap:'<code>COUNT(DISTINCT kolumna)</code> liczy unikalne wartości w grupie, a nie wszystkie wiersze. Dostawca z pięcioma produktami w tej samej kategorii liczy się raz. Warto zestawić obie liczby: <code>LiczbaProduktow</code> to wiersze w grupie, a <code>LiczbaDostawcow</code> to różne wartości w jednej z kolumn tej grupy. Mail zakładał kategorię obsługiwaną przez jednego dostawcę, ale w naszych danych takiej nie ma. Najmniej firm, po trzy, obsługuje kategorie 6, 8 i 10 i to od nich zakupy zaczną planowanie rozmów. Sortowanie po aliasie działa, ponieważ <code>ORDER BY</code> wykonuje się po <code>SELECT</code>.'
+    }
+  ]
+},
+
+a5:{
+  no:7, table:'products', tableLabel:'Products',
+  q:'A z kim konkretnie mam o tym rozmawiać?',
+  stages:[
+    {
+      label:'punkt wyjścia',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'},
+           {t:'    COUNT(*)                   AS LiczbaProduktow,'},
+           {t:'    COUNT(DISTINCT SupplierID) AS LiczbaDostawcow'},
+           L.from, L.where, L.gCat,
+           {t:'ORDER BY LiczbaDostawcow'}],
+      where:wSprzedazy, groupBy:['cat'], aggs:[AC.count, AC.dist],
+      order:(a,b)=> AC.dist.fn(a.rows) - AC.dist.fn(b.rows),
+      cap:'Dziesięć kategorii i liczba dostawców w każdej. Przy stole siada się jednak z konkretną firmą, a nie z kategorią, więc podział musi zejść o poziom niżej.'
+    },
+    {
+      label:'GROUP BY po dwóch kolumnach',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'}, {t:'    SupplierID,'},
+           {t:'    COUNT(*)          AS LiczbaProduktow,'},
+           {t:'    SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from, L.where, L.gPara,
+           {t:'ORDER BY CategoryID, SztukNaStanie'}],
+      where:wSprzedazy, groupBy:['cat','sup'], aggs:[AC.count, AC.sum],
+      order:(a,b)=> a.vals[0]-b.vals[0] || AC.sum.fn(a.rows)-AC.sum.fn(b.rows),
+      cap:'Grupą jest teraz każda unikalna <b>para</b> wartości, czyli kategoria razem z dostawcą. Dostawca obsługujący trzy kategorie da trzy osobne wiersze, po jednym na kategorię. Porównaj liczbę wierszy z poprzednim etapem: było dziesięć, jest czterdzieści pięć, bo każda kategoria rozpadła się na tylu dostawców, ilu ją obsługuje. Zasada jest ogólna: im więcej kolumn w <code>GROUP BY</code>, tym drobniejszy podział i tym mniej wierszy w każdej grupie. Gdybyśmy dopisali jeszcze <code>ProductID</code>, grupy zrobiłyby się jednoelementowe, a agregaty przestałyby cokolwiek zwijać. <code>SUM(UnitsInStock)</code> to ta druga liczba zapowiedziana na początku: <code>COUNT(*)</code> mówi, ile mamy pozycji, a <code>SUM</code>, ile sztuk fizycznie leży w magazynie.'
+    }
+  ]
+},
+
+a6:{
+  no:8, table:'products', tableLabel:'Products',
+  q:'Za długie. Chcę tylko to, co pilne.',
+  stages:[
+    {
+      label:'punkt wyjścia',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'}, {t:'    SupplierID,'},
+           {t:'    COUNT(*)          AS LiczbaProduktow,'},
+           {t:'    SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from, L.where, L.gPara,
+           {t:'ORDER BY CategoryID, SztukNaStanie'}],
+      where:wSprzedazy, groupBy:['cat','sup'], aggs:[AC.count, AC.sum],
+      order:(a,b)=> a.vals[0]-b.vals[0] || AC.sum.fn(a.rows)-AC.sum.fn(b.rows),
+      cap:'Czterdzieści pięć par to zestawienie, którego nikt nie przejrzy przed spotkaniem. Dział zakupów podał próg: poniżej 50 sztuk zaczynają rozmowę.'
+    },
+    {
+      label:'HAVING',
+      sql:[{t:'SELECT'}, {t:'    CategoryID,'}, {t:'    SupplierID,'},
+           {t:'    COUNT(*)          AS LiczbaProduktow,'},
+           {t:'    SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from, L.where, L.gPara,
+           {t:'HAVING SUM(UnitsInStock) <= 50'},
+           {t:'ORDER BY CategoryID, SztukNaStanie'}],
+      where:wSprzedazy, groupBy:['cat','sup'], aggs:[AC.count, AC.sum],
+      having:{label:'zapas powyżej 50 sztuk', fn:g=>AC.sum.fn(g.rows) <= 50},
+      order:(a,b)=> a.vals[0]-b.vals[0] || AC.sum.fn(a.rows)-AC.sum.fn(b.rows),
+      cap:'<b>HAVING</b> filtruje grupy, już po policzeniu agregatu. Z czterdziestu pięciu par zostaje dziesięć, a wiersze należące do odrzuconych grup gasną w tabeli. W jednym zapytaniu pracują teraz dwa filtry na dwóch różnych etapach: <code>WHERE</code> odsiewa pojedyncze produkty, zanim cokolwiek się zgrupuje, a <code>HAVING</code> odsiewa już policzone grupy. Dopiero przy tak drobnym podziale <code>HAVING</code> naprawdę pracuje: przy dziesięciu kategoriach wystarczyłoby spojrzeć na posortowaną listę, przy czterdziestu pięciu parach próg 50 sztuk jest konkretną decyzją.'
+    }
+  ]
+},
+
+a7:{
+  no:'8, ciąg dalszy', table:'products', tableLabel:'Products', mode:'variants',
+  q:'Dlaczego WHERE nie zastąpi HAVING',
+  stages:[
+    {
+      label:'poprawnie',
+      sql:[{t:'SELECT CategoryID, SupplierID, SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from, L.where, L.gPara,
+           {t:'«HAVING SUM(UnitsInStock)» <= 50'}],
+      where:wSprzedazy, groupBy:['cat','sup'], aggs:[AC.sum],
+      having:{label:'zapas powyżej 50 sztuk', fn:g=>AC.sum.fn(g.rows) <= 50},
+      order:(a,b)=> a.vals[0]-b.vals[0] || AC.sum.fn(a.rows)-AC.sum.fn(b.rows),
+      cap:'Wersja działająca: warunek na agregacie stoi w <code>HAVING</code> i powtarza całe wyrażenie <code>SUM(UnitsInStock)</code>. Dziesięć par poniżej progu.'
+    },
+    {
+      label:'WHERE zamiast HAVING',
+      sql:[{t:'SELECT CategoryID, SupplierID, SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from,
+           {t:'«WHERE SUM(UnitsInStock)» <= 50'},
+           L.gPara],
+      where:wSprzedazy,
+      error:'Msg 147, Level 15, State 1<br>An aggregate may not appear in the WHERE clause unless it is in a subquery contained in a HAVING clause or a select list, and the column being aggregated is an outer reference.',
+      cap:'<code>WHERE</code> wykonuje się <b>przed</b> <code>GROUP BY</code>, więc w momencie jego działania grupy jeszcze nie istnieją i nie ma czego sumować. Nie da się odfiltrować wyniku, którego jeszcze nie policzono.'
+    },
+    {
+      label:'HAVING z aliasem',
+      sql:[{t:'SELECT CategoryID, SupplierID, SUM(UnitsInStock) AS SztukNaStanie'},
+           L.from, L.where, L.gPara,
+           {t:'«HAVING SztukNaStanie» <= 50'}],
+      where:wSprzedazy,
+      error:'Msg 207, Level 16, State 1<br>Invalid column name \'SztukNaStanie\'.',
+      cap:'Alias powstaje na etapie <code>SELECT</code>, a <code>HAVING</code> wykonuje się wcześniej, więc nazwa <code>SztukNaStanie</code> jeszcze nie istnieje. W <code>HAVING</code> trzeba powtórzyć całe wyrażenie. W <code>ORDER BY</code> ten sam alias zadziała bez przeszkód, ponieważ sortowanie wykonuje się już po <code>SELECT</code>.'
+    }
+  ]
+}
+
+};
+
+document.querySelectorAll('[data-demo]').forEach(el=>{ new Demo(el, SPECS[el.dataset.demo]); });
+</script>
+</body>
+</html>
